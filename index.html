@@ -273,8 +273,7 @@ function startFlash(){
 
 // ═══ TONE HELPERS ═══
 function getToneInfo(w){
-  if(!w.t)return null;
-  // 1) Check TRW table first
+  // Only show tone rule if word is in tone_rule_words table
   var matches=[];
   S.toneRuleWords.forEach(function(tw){
     if((tw.hanzi||tw.h)===w.h){
@@ -283,46 +282,20 @@ function getToneInfo(w){
       if(rule)matches.push(rule);
     }
   });
-  if(matches.length)return matches;
-  // 2) Auto-detect from characters
-  var findRule=function(n){return S.toneRules.find(function(r){return(r.rule_number||r.n)===n})};
-  // 不 before 4th tone → Rule 3
-  if(w.h.indexOf('\u4E0D')>=0){var r3=findRule(3);if(r3)return[r3]}
-  // 一 → Rule 4 (before 4th) or Rule 5 (before 1st/2nd/3rd)
-  if(w.h.indexOf('\u4E00')>=0){
-    // Check pinyin for tone after 一
-    var p=w.p||'';
-    var r4=findRule(4),r5=findRule(5);
-    if(p.match&&p.match(/[àèìòùǜ]/)){if(r4)return[r4]}
-    if(r5)return[r5];
-  }
-  // 3rd+3rd → Rule 1
-  var t3='\u01CE\u011B\u01D0\u01D2\u01D4\u01DA'; // ǎěǐǒǔǚ
-  var p=w.p||'';var found3=[];
-  for(var i=0;i<p.length;i++){if(t3.indexOf(p[i])>=0)found3.push(i)}
-  if(found3.length>=2){var r1=findRule(1);if(r1)return[r1]}
-  // 3rd+other → Rule 2
-  if(found3.length>=1){var r2=findRule(2);if(r2)return[r2]}
-  return null;
+  return matches.length?matches:null;
 }
 
 function toneRuleBadge(w){
   var info=getToneInfo(w);
-  if(!info)return '<div class="text-amber-400 text-xs mb-2">\u2B50 Tone Change</div>';
+  if(!info)return '';
   var r=info[0];
   var rn=r.rule_number||r.n;
   var rname=r.rule_name||r.name;
   var rdesc=r.description||r.desc;
-  var reb=r.example_before||r.eb;
-  var rea=r.example_after||r.ea;
-  return '<div class="mb-3">'
-    +'<div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium mb-2" style="background:'+RULE_COLORS[rn-1]+';color:#fff">Rule '+rn+': '+esc(rname)+'</div>'
-    +'<div class="text-[11px] text-gray-400">'+esc(rdesc)+'</div>'
-    +'<div class="flex items-center justify-center gap-2 mt-1.5 text-sm">'
-    +'<span class="text-red-400 font-chinese">'+esc(reb)+'</span>'
-    +'<span class="text-gray-500">\u2192</span>'
-    +'<span class="text-emerald-400 font-chinese">'+esc(rea)+'</span>'
-    +'</div></div>';
+  return '<div class="mb-2">'
+    +'<div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium" style="background:'+RULE_COLORS[rn-1]+';color:#fff">Rule '+rn+': '+esc(rname)+'</div>'
+    +'<div class="text-[11px] text-gray-400 mt-1">'+esc(rdesc)+'</div>'
+    +'</div>';
 }
 
 // ═══ HELPERS ═══
