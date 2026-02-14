@@ -10,7 +10,7 @@
   <script>tailwind.config={theme:{extend:{fontFamily:{chinese:['"Noto Sans SC"','system-ui','sans-serif']}}}}</script>
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:system-ui,-apple-system,sans-serif;background:#0c1021;color:#f1f1f4;min-height:100vh}
+    body{font-family:system-ui,-apple-system,sans-serif;background:#0c1021;color:#f1f1f4;min-height:100vh;-webkit-user-select:none;user-select:none}
     ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:#333;border-radius:4px}
     @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
     .fade-up{animation:fadeUp 0.35s ease-out forwards;opacity:0}
@@ -20,9 +20,8 @@
     .backface-hidden{backface-visibility:hidden}.rotate-y-180{transform:rotateY(180deg)}
     .rating-btn{transition:all 0.2s ease}.rating-btn:hover{transform:scale(1.1)!important}
     .progress-fill{transition:width 0.4s ease}
-    .write-input{background:rgba(255,255,255,0.05);border:2px solid rgba(255,255,255,0.12);border-radius:16px;color:#fff;font-size:48px;text-align:center;padding:20px;width:100%;font-family:"Noto Sans SC",sans-serif;outline:none;transition:border-color 0.3s}
-    .write-input:focus{border-color:rgba(239,68,68,0.5)}
-    .write-input::placeholder{color:rgba(255,255,255,0.15);font-size:18px}
+    .draw-canvas{border:2px solid rgba(255,255,255,0.12);border-radius:16px;background:rgba(255,255,255,0.04);cursor:crosshair;touch-action:none;display:block}
+    .draw-canvas.active{border-color:rgba(239,68,68,0.4)}
   </style>
 </head>
 <body>
@@ -57,13 +56,92 @@ var CATEGORIES=['Chinese Class','Self Study'];
 var TEST_MODES=[
   {k:'read',icon:'\u8BFB',label:'Read',desc:'Hanzi \u2192 Pinyin'},
   {k:'recognize',icon:'\u8BC6',label:'Recognize',desc:'Pinyin \u2192 Hanzi'},
-  {k:'write',icon:'\u5199',label:'Write',desc:'Write Hanzi'}
+  {k:'write',icon:'\u5199',label:'Write',desc:'Draw Hanzi'}
 ];
+
+// ═══ CANVAS STATE ═══
+var canvasData=null; // ImageData to preserve drawing across renders
+var isDrawing=false;
+
+function initCanvas(){
+  var c=document.getElementById('drawCanvas');
+  if(!c)return;
+  var ctx=c.getContext('2d');
+  // Set canvas resolution
+  var rect=c.getBoundingClientRect();
+  c.width=rect.width*2;
+  c.height=rect.height*2;
+  ctx.scale(2,2);
+  ctx.lineCap='round';
+  ctx.lineJoin='round';
+  ctx.lineWidth=4;
+  ctx.strokeStyle='#f1f1f4';
+  // Restore previous drawing if exists
+  if(canvasData){
+    ctx.putImageData(canvasData,0,0);
+  }
+  // Events
+  function getPos(e){
+    var r=c.getBoundingClientRect();
+    var t=e.touches?e.touches[0]:e;
+    return{x:(t.clientX-r.left),y:(t.clientY-r.top)};
+  }
+  function start(e){
+    e.preventDefault();
+    isDrawing=true;
+    c.classList.add('active');
+    var p=getPos(e);
+    ctx.beginPath();
+    ctx.moveTo(p.x,p.y);
+  }
+  function move(e){
+    if(!isDrawing)return;
+    e.preventDefault();
+    var p=getPos(e);
+    ctx.lineTo(p.x,p.y);
+    ctx.stroke();
+  }
+  function end(e){
+    if(!isDrawing)return;
+    isDrawing=false;
+    c.classList.remove('active');
+    // Save canvas data
+    saveCanvasData();
+  }
+  c.addEventListener('mousedown',start);
+  c.addEventListener('mousemove',move);
+  c.addEventListener('mouseup',end);
+  c.addEventListener('mouseleave',end);
+  c.addEventListener('touchstart',start,{passive:false});
+  c.addEventListener('touchmove',move,{passive:false});
+  c.addEventListener('touchend',end);
+}
+
+function saveCanvasData(){
+  var c=document.getElementById('drawCanvas');
+  if(!c)return;
+  canvasData=c.getContext('2d').getImageData(0,0,c.width,c.height);
+}
+
+function clearCanvas(){
+  var c=document.getElementById('drawCanvas');
+  if(!c)return;
+  var ctx=c.getContext('2d');
+  ctx.clearRect(0,0,c.width,c.height);
+  canvasData=null;
+}
+
+function hasDrawing(){
+  if(!canvasData)return false;
+  var d=canvasData.data;
+  for(var i=3;i<d.length;i+=4){if(d[i]>0)return true}
+  return false;
+}
 
 // ═══ STATE ═══
 var S={
   screen:'loading',history:[],activeMode:'study',activeCat:'Chinese Class',
-  testMode:'read', // 'read','recognize','write'
+  testMode:'read',
   sources:[],allWords:[],currentSource:null,words:[],
   toneRules:[],toneRuleWords:[],
   wordCounts:{},toneCounts:{},
@@ -72,7 +150,6 @@ var S={
   si:0,sRev:false,sFilt:null,
   qw:[],qi:0,qs:0,qa:false,qsel:null,qopts:[],qcor:'',qtype:'m',qd:false,
   fw:[],fi:0,ff:false,
-  writeVal:'', // for write mode input
 };
 
 function saveR(){localStorage.setItem('hanyu_ratings',JSON.stringify(S.ratings))}
@@ -86,8 +163,8 @@ async function rate(id,v){
 }
 
 function nav(s){S.history.push(S.screen);S.screen=s;render()}
-function back(){S.screen=S.history.pop()||'home';render()}
-function home(){S.screen='home';S.history=[];render()}
+function back(){S.screen=S.history.pop()||'home';canvasData=null;render()}
+function home(){S.screen='home';S.history=[];canvasData=null;render()}
 
 // ═══ DATA LOADING ═══
 async function initApp(){
@@ -122,10 +199,10 @@ async function initApp(){
       t:w.has_tone_rule?1:0}});
     S.toneRules=res[2].data||[];
     S.toneRuleWords=res[3].data||[];
-    console.log('DB: '+S.allWords.length+' words from Supabase');
+    console.log('DB: '+S.allWords.length+' words');
     if(S.user)await loadCloudRatings();
   }catch(e){
-    console.warn('Fallback to embedded:',e.message);
+    console.warn('Fallback:',e.message);
     dataSource='embedded';
     S.sources=EMBED_SOURCES;S.allWords=EMBED_WORDS;
     S.toneRules=EMBED_RULES;S.toneRuleWords=EMBED_TRW;
@@ -142,7 +219,7 @@ async function loadCloudRatings(){
   if(!S.user||!sbClient)return;
   try{var r=await sbClient.from('chinese_study_app_user_word_ratings').select('word_id,rating').eq('user_id',S.user.id);
     if(r.data){r.data.forEach(function(x){S.ratings[x.word_id]=x.rating});saveR()}}
-  catch(e){console.warn('Cloud ratings fail:',e)}
+  catch(e){console.warn(e)}
 }
 
 async function signInGoogle(){
@@ -155,7 +232,7 @@ async function signOut(){if(sbClient)await sbClient.auth.signOut();S.user=null;r
 function openSrc(id){
   S.currentSource=S.sources.find(function(s){return s.id===id});
   S.words=S.allWords.filter(function(w){return w.sid===id});
-  S.sFilt=null;S.writeVal='';
+  S.sFilt=null;canvasData=null;
   if(S.activeMode==='study'){S.si=0;S.sRev=false;nav('study')}
   else if(S.activeMode==='quiz')startQuiz();
   else if(S.activeMode==='flash')startFlash();
@@ -164,25 +241,25 @@ function openSrc(id){
 function startQuiz(){
   if(S.words.length<4){alert('Need 4+ words');return}
   S.qw=[...S.words].sort(function(){return Math.random()-0.5}).slice(0,20);
-  S.qi=0;S.qs=0;S.qd=false;prepQ(0);nav('quiz');
+  S.qi=0;S.qs=0;S.qd=false;canvasData=null;prepQ(0);nav('quiz');
 }
 function prepQ(i){
   var w=S.qw[i];if(!w)return;
-  S.writeVal='';
+  canvasData=null;
   if(S.testMode==='read'){
-    // Show hanzi, pick meaning or pinyin
     var t=Math.random()>0.5?'m':'p';S.qtype=t;
     var cor=t==='m'?(w.m||''):w.p;S.qcor=cor;
     var pool=S.words.filter(function(x){return x.id!==w.id}).map(function(x){return t==='m'?(x.m||''):x.p}).filter(Boolean);
     var u=[...new Set(pool)],wrong=u.sort(function(){return Math.random()-0.5}).slice(0,3);
     S.qopts=[cor,...wrong].sort(function(){return Math.random()-0.5});
-  } else {
-    // Show pinyin+meaning, pick hanzi
+  }else{
     S.qtype='h';
     var cor=w.h;S.qcor=cor;
-    var pool=S.words.filter(function(x){return x.id!==w.id}).map(function(x){return x.h}).filter(Boolean);
-    var u=[...new Set(pool)],wrong=u.sort(function(){return Math.random()-0.5}).slice(0,3);
-    S.qopts=[cor,...wrong].sort(function(){return Math.random()-0.5});
+    if(S.testMode==='recognize'){
+      var pool=S.words.filter(function(x){return x.id!==w.id}).map(function(x){return x.h}).filter(Boolean);
+      var u=[...new Set(pool)],wrong=u.sort(function(){return Math.random()-0.5}).slice(0,3);
+      S.qopts=[cor,...wrong].sort(function(){return Math.random()-0.5});
+    }
   }
   S.qa=false;S.qsel=null;
 }
@@ -191,21 +268,17 @@ function nextQ(){var n=S.qi+1;if(n>=S.qw.length){S.qd=true;render();return}S.qi=
 
 function startFlash(){
   if(!S.words.length)return;
-  S.fw=[...S.words].sort(function(){return Math.random()-0.5});S.fi=0;S.ff=false;S.writeVal='';nav('flash');
+  S.fw=[...S.words].sort(function(){return Math.random()-0.5});S.fi=0;S.ff=false;canvasData=null;nav('flash');
 }
 
-// ═══ TONE RULE HELPERS ═══
+// ═══ TONE HELPERS ═══
 function getToneInfo(w){
-  // Find which tone rule(s) apply to this word
   if(!w.t)return null;
   var matches=[];
-  var trw=S.toneRuleWords;
-  var rules=S.toneRules;
-  trw.forEach(function(tw){
-    var twh=tw.hanzi||tw.h;
-    if(twh===w.h){
-      var ruleId=tw.rule_id||tw.rid;
-      var rule=rules.find(function(r){return (r.id||r.n)===ruleId});
+  S.toneRuleWords.forEach(function(tw){
+    if((tw.hanzi||tw.h)===w.h){
+      var rid=tw.rule_id||tw.rid;
+      var rule=S.toneRules.find(function(r){return(r.id||r.n)===rid});
       if(rule)matches.push(rule);
     }
   });
@@ -222,8 +295,7 @@ function toneRuleBadge(w){
   var reb=r.example_before||r.eb;
   var rea=r.example_after||r.ea;
   return '<div class="mb-3">'
-    +'<div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium mb-2" style="background:'+RULE_COLORS[rn-1]+';color:#fff">'
-    +'Rule '+rn+': '+esc(rname)+'</div>'
+    +'<div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium mb-2" style="background:'+RULE_COLORS[rn-1]+';color:#fff">Rule '+rn+': '+esc(rname)+'</div>'
     +'<div class="text-[11px] text-gray-400">'+esc(rdesc)+'</div>'
     +'<div class="flex items-center justify-center gap-2 mt-1.5 text-sm">'
     +'<span class="text-red-400 font-chinese">'+esc(reb)+'</span>'
@@ -253,29 +325,31 @@ function testModeTabs(){
   var h='<div class="flex gap-1 bg-gray-900/50 rounded-2xl p-1 mb-3">';
   TEST_MODES.forEach(function(m){
     var a=m.k===S.testMode;
-    h+='<button onclick="S.testMode=\''+m.k+'\';S.sRev=false;S.ff=false;S.writeVal=\'\';render()" class="flex-1 py-2 rounded-xl text-center" style="background:'+(a?'#ef4444':'transparent')+';border:none;color:'+(a?'#fff':'#6b7280')+';cursor:pointer;transition:all 0.2s"><div class="text-sm font-bold">'+m.icon+'</div><div class="text-[10px]" style="opacity:0.8">'+m.desc+'</div></button>';
+    h+='<button onclick="S.testMode=\''+m.k+'\';S.sRev=false;S.ff=false;canvasData=null;render()" class="flex-1 py-2 rounded-xl text-center" style="background:'+(a?'#ef4444':'transparent')+';border:none;color:'+(a?'#fff':'#6b7280')+';cursor:pointer;transition:all 0.2s"><div class="text-sm font-bold">'+m.icon+'</div><div class="text-[10px]" style="opacity:0.8">'+m.desc+'</div></button>';
   });
-  h+='</div>';
-  return h;
+  return h+'</div>';
 }
 
-function writeInput(placeholder){
-  return '<input type="text" class="write-input font-chinese" placeholder="'+esc(placeholder)+'" value="'+esc(S.writeVal)+'" oninput="S.writeVal=this.value" onkeydown="if(event.key===\'Enter\'){S.sRev=true;render()}" autocomplete="off" />';
+function canvasHTML(height){
+  height=height||200;
+  return '<div class="relative" style="margin:0 auto">'
+    +'<canvas id="drawCanvas" class="draw-canvas w-full" style="height:'+height+'px"></canvas>'
+    +'<div class="absolute top-2 right-2"><button onclick="event.stopPropagation();clearCanvas()" class="px-3 py-1 rounded-lg text-xs font-medium flex items-center gap-1" style="background:rgba(255,255,255,0.08);border:none;color:#9ca3af;cursor:pointer">\uD83D\uDDD1 Clear</button></div>'
+    +'<div class="absolute bottom-2 left-3 text-xs text-gray-600">\u270D\uFE0F Draw hanzi here</div>'
+    +'</div>';
 }
 
 // ═══ KEYBOARD ═══
 document.addEventListener('keydown',function(e){
-  // Don't capture keys when writing
-  if(S.testMode==='write'&&document.activeElement&&document.activeElement.classList.contains('write-input'))return;
   if(S.screen==='study'){var f=getF();
-    if(e.key==='ArrowRight'||e.key===' '){e.preventDefault();S.si=Math.min(S.si+1,f.length-1);S.sRev=false;S.writeVal='';render()}
-    if(e.key==='ArrowLeft'){e.preventDefault();S.si=Math.max(S.si-1,0);S.sRev=false;S.writeVal='';render()}
+    if(e.key==='ArrowRight'||e.key===' '){e.preventDefault();S.si=Math.min(S.si+1,f.length-1);S.sRev=false;canvasData=null;render()}
+    if(e.key==='ArrowLeft'){e.preventDefault();S.si=Math.max(S.si-1,0);S.sRev=false;canvasData=null;render()}
     if(e.key==='Enter'){e.preventDefault();S.sRev=!S.sRev;render()}
     if(e.key>='0'&&e.key<='5'){var w=f[S.si];if(w)rate(w.id,parseInt(e.key))}
   }
   if(S.screen==='flash'){
-    if(e.key==='ArrowRight'||e.key===' '){e.preventDefault();S.fi=Math.min(S.fi+1,S.fw.length-1);S.ff=false;S.writeVal='';render()}
-    if(e.key==='ArrowLeft'){e.preventDefault();S.fi=Math.max(S.fi-1,0);S.ff=false;S.writeVal='';render()}
+    if(e.key==='ArrowRight'||e.key===' '){e.preventDefault();S.fi=Math.min(S.fi+1,S.fw.length-1);S.ff=false;canvasData=null;render()}
+    if(e.key==='ArrowLeft'){e.preventDefault();S.fi=Math.max(S.fi-1,0);S.ff=false;canvasData=null;render()}
     if(e.key==='Enter'){e.preventDefault();S.ff=!S.ff;render()}
   }
   if(e.key==='Escape')back();
@@ -297,28 +371,25 @@ if(S.screen==='home'){
   var catSrc=S.sources.filter(function(x){return x.category===S.activeCat});
   var catCnt=catSrc.reduce(function(a,x){return a+(S.wordCounts[x.id]||0)},0);
 
-  // Mode tabs
   h+='<div class="border-b border-white/[0.06]" style="background:#151a2d"><div class="flex pt-3">';
   [{k:'study',i:'\uD83D\uDCD6',l:'Study'},{k:'quiz',i:'\uD83E\uDDE0',l:'Quiz'},{k:'flash',i:'\uD83C\uDCCF',l:'Flash'},{k:'tone',i:'\uD83C\uDFB5',l:'Tones'}].forEach(function(m){
     var a=m.k===S.activeMode;
     var bb=a&&m.k!=='tone'?'border-bottom:3px solid #ef4444':'border-bottom:3px solid transparent';
     if(m.k==='tone'){
       h+='<button onclick="nav(\'tone\')" class="flex-1 flex flex-col items-center gap-1 pb-3 pt-2.5" style="background:none;border:none;cursor:pointer;color:'+(a?'#fff':'#6b7280')+';'+bb+'"><span class="text-2xl" style="filter:'+(a?'none':'grayscale(60%) brightness(0.7)')+'">'+m.i+'</span><span class="text-xs" style="font-weight:'+(a?700:500)+'">'+m.l+'</span></button>';
-    } else {
+    }else{
       h+='<button onclick="S.activeMode=\''+m.k+'\';render()" class="flex-1 flex flex-col items-center gap-1 pb-3 pt-2.5" style="background:none;border:none;cursor:pointer;color:'+(a?'#fff':'#6b7280')+';'+bb+'"><span class="text-2xl" style="filter:'+(a?'none':'grayscale(60%) brightness(0.7)')+'">'+m.i+'</span><span class="text-xs" style="font-weight:'+(a?700:500)+'">'+m.l+'</span></button>';
     }
   });
   h+='<button onclick="nav(\'progress\')" class="flex flex-col items-center gap-1 pb-3 pt-2.5 px-3" style="background:none;border:none;cursor:pointer;color:#6b7280;border-bottom:3px solid transparent"><span class="text-2xl" style="filter:grayscale(60%) brightness(0.7)">\uD83D\uDCCA</span><span class="text-[11px]" style="font-weight:500">Stats</span></button>';
   h+='</div></div>';
 
-  // Category pills
   h+='<div class="px-4 pt-3 pb-2 flex gap-2">';
   CATEGORIES.forEach(function(cat){
     h+='<button onclick="S.activeCat=\''+cat+'\';render()" class="px-5 py-2 rounded-3xl text-[13px] font-semibold" style="border:none;cursor:pointer;background:'+(S.activeCat===cat?'#ef4444':'rgba(255,255,255,0.07)')+';color:'+(S.activeCat===cat?'#fff':'#9ca3af')+'">'+cat+'</button>';
   });
   h+='</div>';
 
-  // Source cards
   h+='<div class="px-4 pt-2 pb-4"><div class="flex justify-between items-center mb-3"><h2 class="text-lg font-bold">Select Source</h2><span class="text-[13px] text-gray-500">'+catCnt+' words</span></div>';
   catSrc.forEach(function(src,i){
     var cs=SRC_COLORS[src.icon]||['#6b7280','#4b5563'];
@@ -328,7 +399,6 @@ if(S.screen==='home'){
   if(!catSrc.length)h+='<div class="text-center py-10 text-gray-500">No sources</div>';
   h+='</div>';
 
-  // Status
   var userName=S.user&&S.user.user_metadata&&S.user.user_metadata.full_name?S.user.user_metadata.full_name.split(' ')[0]:'Aniket';
   var dbBadge=dataSource==='supabase'?'<span class="inline-block px-2 py-0.5 rounded text-[10px] font-medium" style="background:rgba(16,185,129,0.15);color:#34d399">\uD83D\uDFE2 Live DB</span>':'<span class="inline-block px-2 py-0.5 rounded text-[10px] font-medium" style="background:rgba(245,158,11,0.15);color:#fbbf24">\uD83D\uDCE6 Offline</span>';
   h+='<div class="px-4 pt-2"><div class="rounded-2xl p-4 border border-white/5 text-center" style="background:linear-gradient(135deg,#151a2d,#1b2240)">';
@@ -350,18 +420,14 @@ else if(S.screen==='study'){
   if(!w){h+='<div class="text-center py-20 text-gray-500">'+(S.sFilt!==null?'No words with this rating':'No words')+'</div>'}
   else{
     h+='<div class="p-4">'+progBar(S.si+1,f.length);
-    // Test mode tabs
     h+=testModeTabs();
-    // Filter pills
-    h+='<div class="flex gap-1.5 flex-wrap justify-center mb-3"><button onclick="S.sFilt=null;S.si=0;S.sRev=false;S.writeVal=\'\';render()" class="px-2.5 py-1 rounded-2xl text-[11px] font-medium" style="background:'+(S.sFilt===null?'#ef4444':'#374151')+';border:none;color:#fff;cursor:pointer">All ('+S.words.length+')</button>';
-    RATINGS.forEach(function(r){h+='<button onclick="S.sFilt='+r.v+';S.si=0;S.sRev=false;S.writeVal=\'\';render()" class="px-2 py-1 rounded-2xl text-[11px]" style="background:'+(S.sFilt===r.v?r.bg:'#374151')+';border:none;color:#fff;cursor:pointer">'+r.icon+'</button>'});
+    h+='<div class="flex gap-1.5 flex-wrap justify-center mb-3"><button onclick="S.sFilt=null;S.si=0;S.sRev=false;canvasData=null;render()" class="px-2.5 py-1 rounded-2xl text-[11px] font-medium" style="background:'+(S.sFilt===null?'#ef4444':'#374151')+';border:none;color:#fff;cursor:pointer">All ('+S.words.length+')</button>';
+    RATINGS.forEach(function(r){h+='<button onclick="S.sFilt='+r.v+';S.si=0;S.sRev=false;canvasData=null;render()" class="px-2 py-1 rounded-2xl text-[11px]" style="background:'+(S.sFilt===r.v?r.bg:'#374151')+';border:none;color:#fff;cursor:pointer">'+r.icon+'</button>'});
     h+='</div>';
 
     // ═══ STUDY CARD ═══
-    h+='<div onclick="if(S.testMode!==\'write\'){S.sRev=!S.sRev;render()}" class="rounded-[20px] p-6 border border-white/[0.08] text-center cursor-pointer mb-4" style="background:linear-gradient(145deg,#151a2d,#1b2240);min-height:280px">';
-
     if(S.testMode==='read'){
-      // READ: Show Hanzi, reveal Pinyin+Meaning
+      h+='<div onclick="S.sRev=!S.sRev;render()" class="rounded-[20px] p-6 border border-white/[0.08] text-center cursor-pointer mb-4" style="background:linear-gradient(145deg,#151a2d,#1b2240);min-height:280px">';
       if(w.t)h+=toneRuleBadge(w);
       h+='<div class="text-7xl font-bold mb-4 leading-none font-chinese">'+esc(w.h)+'</div>';
       h+='<div class="text-2xl text-amber-400 mb-2 font-chinese" style="opacity:'+(S.sRev?1:0)+';transition:opacity 0.3s">'+esc(w.p)+'</div>';
@@ -369,11 +435,11 @@ else if(S.screen==='study'){
       if(w.mr)h+='<div class="text-sm text-gray-500 mt-1" style="opacity:'+(S.sRev?1:0)+';transition:opacity 0.3s">'+esc(w.mr)+'</div>';
       if(w.s)h+='<div class="text-sm text-gray-400 mt-3 border-t border-white/5 pt-3 font-chinese" style="opacity:'+(S.sRev?1:0)+';transition:opacity 0.3s">'+esc(w.s)+'</div>';
       if(w.hi)h+='<div class="text-xs text-purple-400 mt-2 italic" style="opacity:'+(S.sRev?1:0)+';transition:opacity 0.3s">\uD83D\uDCA1 '+esc(w.hi)+'</div>';
-      if(w.s1||w.s2){var sw=[w.s1,w.s2].filter(Boolean).join(' \u00B7 ');h+='<div class="text-[11px] text-gray-500 mt-1.5" style="opacity:'+(S.sRev?1:0)+';transition:opacity 0.3s">'+esc(sw)+'</div>'}
       if(!S.sRev)h+='<div class="text-gray-600 text-xs mt-4">Tap to reveal</div>';
+      h+='</div>';
     }
     else if(S.testMode==='recognize'){
-      // RECOGNIZE: Show Pinyin+Meaning, reveal Hanzi
+      h+='<div onclick="S.sRev=!S.sRev;render()" class="rounded-[20px] p-6 border border-white/[0.08] text-center cursor-pointer mb-4" style="background:linear-gradient(145deg,#151a2d,#1b2240);min-height:280px">';
       h+='<div class="text-2xl text-amber-400 mb-2 font-chinese">'+esc(w.p)+'</div>';
       h+='<div class="text-[17px] text-gray-300 mb-2">'+esc(w.m)+'</div>';
       if(w.mr)h+='<div class="text-sm text-gray-500 mb-4">'+esc(w.mr)+'</div>';
@@ -382,36 +448,39 @@ else if(S.screen==='study'){
         if(w.t)h+=toneRuleBadge(w);
         h+='<div class="text-7xl font-bold mb-3 leading-none font-chinese">'+esc(w.h)+'</div>';
         if(w.s)h+='<div class="text-sm text-gray-400 font-chinese">'+esc(w.s)+'</div>';
-        if(w.hi)h+='<div class="text-xs text-purple-400 mt-2 italic">\uD83D\uDCA1 '+esc(w.hi)+'</div>';
       }else{
         h+='<div class="text-6xl text-gray-700 mb-2">?</div>';
         h+='<div class="text-gray-600 text-xs">Tap to reveal hanzi</div>';
       }
-      h+='</div>';
+      h+='</div></div>';
     }
     else if(S.testMode==='write'){
-      // WRITE: Show Pinyin+Meaning, write input, reveal Hanzi
-      h+='<div class="text-2xl text-amber-400 mb-2 font-chinese">'+esc(w.p)+'</div>';
-      h+='<div class="text-[17px] text-gray-300 mb-2">'+esc(w.m)+'</div>';
-      if(w.mr)h+='<div class="text-sm text-gray-500 mb-4">'+esc(w.mr)+'</div>';
-      h+='<div class="border-t border-white/5 pt-4" onclick="event.stopPropagation()">';
-      h+=writeInput('Write hanzi here...');
-      if(S.sRev){
-        var isMatch=S.writeVal.trim()===w.h;
-        h+='<div class="mt-4 py-3 rounded-xl font-medium" style="background:'+(isMatch?'rgba(16,185,129,0.15)':'rgba(239,68,68,0.15)')+';color:'+(isMatch?'#6ee7b7':'#fca5a5')+'">'+(isMatch?'\uD83C\uDF89 Correct!':'\u274C Not quite')+'</div>';
-        h+='<div class="text-7xl font-bold mt-3 leading-none font-chinese">'+esc(w.h)+'</div>';
-        if(w.t)h+=toneRuleBadge(w);
-      }else{
-        h+='<button onclick="event.stopPropagation();S.sRev=true;render()" class="mt-3 px-6 py-2.5 rounded-xl text-sm font-medium" style="background:#dc2626;border:none;color:#fff;cursor:pointer">Check Answer</button>';
-      }
+      // WRITE MODE with canvas
+      h+='<div class="rounded-[20px] p-5 border border-white/[0.08] mb-4" style="background:linear-gradient(145deg,#151a2d,#1b2240)">';
+      h+='<div class="text-center mb-4">';
+      h+='<div class="text-2xl text-amber-400 mb-1 font-chinese">'+esc(w.p)+'</div>';
+      h+='<div class="text-[17px] text-gray-300">'+esc(w.m)+'</div>';
+      if(w.mr)h+='<div class="text-sm text-gray-500 mt-0.5">'+esc(w.mr)+'</div>';
       h+='</div>';
+      // Canvas
+      h+=canvasHTML(200);
+      // Reveal section
+      h+='<div class="mt-4 text-center">';
+      if(S.sRev){
+        h+='<div class="rounded-xl p-4 mb-2" style="background:rgba(0,0,0,0.3)">';
+        if(w.t)h+=toneRuleBadge(w);
+        h+='<div class="text-6xl font-bold leading-none font-chinese mb-2">'+esc(w.h)+'</div>';
+        if(w.s)h+='<div class="text-sm text-gray-400 font-chinese mt-2">'+esc(w.s)+'</div>';
+        if(w.hi)h+='<div class="text-xs text-purple-400 mt-1 italic">\uD83D\uDCA1 '+esc(w.hi)+'</div>';
+        h+='</div>';
+      }else{
+        h+='<button onclick="event.stopPropagation();saveCanvasData();S.sRev=true;render()" class="px-8 py-2.5 rounded-xl text-sm font-medium" style="background:#dc2626;border:none;color:#fff;cursor:pointer">Reveal Answer</button>';
+      }
+      h+='</div></div>';
     }
-    h+='</div>';
 
-    // Rating
     h+='<div class="text-center mb-3.5"><div class="text-xs text-gray-400 mb-2">Rate:</div><div class="flex justify-center gap-2">'+rateBtns(w.id)+'</div></div>';
-    // Nav
-    h+='<div class="flex gap-2.5"><button onclick="S.si=Math.max(S.si-1,0);S.sRev=false;S.writeVal=\'\';render()" class="flex-1 py-3.5 rounded-[14px] font-semibold text-[15px]" style="background:#374151;border:none;color:#fff;cursor:pointer">\u2190 Prev</button><button onclick="S.si=Math.min(S.si+1,'+(f.length-1)+');S.sRev=false;S.writeVal=\'\';render()" class="flex-1 py-3.5 rounded-[14px] font-semibold text-[15px]" style="background:#dc2626;border:none;color:#fff;cursor:pointer">Next \u2192</button></div></div>';
+    h+='<div class="flex gap-2.5"><button onclick="S.si=Math.max(S.si-1,0);S.sRev=false;canvasData=null;render()" class="flex-1 py-3.5 rounded-[14px] font-semibold text-[15px]" style="background:#374151;border:none;color:#fff;cursor:pointer">\u2190 Prev</button><button onclick="S.si=Math.min(S.si+1,'+(f.length-1)+');S.sRev=false;canvasData=null;render()" class="flex-1 py-3.5 rounded-[14px] font-semibold text-[15px]" style="background:#dc2626;border:none;color:#fff;cursor:pointer">Next \u2192</button></div></div>';
   }
 }
 
@@ -421,7 +490,7 @@ else if(S.screen==='quiz'){
     var p=Math.round((S.qs/S.qw.length)*100),em=p>=90?'\uD83C\uDFC6':p>=70?'\uD83C\uDF89':p>=50?'\uD83D\uDC4D':'\uD83D\uDCAA';
     h+=hdr('Results');
     h+='<div class="text-center pt-10 px-4"><div class="text-6xl mb-4">'+em+'</div><div class="text-5xl font-extrabold mb-2">'+p+'%</div><div class="text-gray-400 mb-1">'+S.qs+' / '+S.qw.length+' correct</div><div class="text-gray-500 text-sm mb-7">'+esc(S.currentSource?S.currentSource.label:'')+'</div><div class="flex gap-2.5"><button onclick="startQuiz()" class="flex-1 py-3.5 rounded-[14px] font-semibold" style="background:#d97706;border:none;color:#fff;cursor:pointer">Try Again</button><button onclick="home()" class="flex-1 py-3.5 rounded-[14px] font-semibold" style="background:#374151;border:none;color:#fff;cursor:pointer">Home</button></div></div>';
-  } else {
+  }else{
     var w=S.qw[S.qi];
     h+=hdr(S.currentSource?S.currentSource.label:'Quiz','<span class="text-sm text-gray-400">'+S.qs+'/'+(S.qi+(S.qa?1:0))+'</span>');
     if(w){
@@ -429,32 +498,29 @@ else if(S.screen==='quiz'){
       h+=testModeTabs();
       h+='<div class="text-sm text-gray-400 mb-1.5">'+(S.qi+1)+' / '+S.qw.length+'</div>'+progBar(S.qi+1,S.qw.length,'#f59e0b','#ef4444');
 
-      // Question card
-      h+='<div class="rounded-[20px] p-6 border border-white/[0.08] text-center mb-5" style="background:linear-gradient(145deg,#151a2d,#1b2240)">';
+      // Question
+      h+='<div class="rounded-[20px] p-5 border border-white/[0.08] text-center mb-4" style="background:linear-gradient(145deg,#151a2d,#1b2240)">';
       if(S.testMode==='read'){
         h+='<div class="text-sm text-gray-400 mb-2">'+(S.qtype==='m'?'What does this mean?':'What is the pinyin?')+'</div>';
         h+='<div class="text-6xl font-bold font-chinese">'+esc(w.h)+'</div>';
-      }else if(S.testMode==='recognize'){
-        h+='<div class="text-sm text-gray-400 mb-2">Which hanzi is this?</div>';
-        h+='<div class="text-2xl text-amber-400 font-chinese mb-1">'+esc(w.p)+'</div>';
-        h+='<div class="text-base text-gray-300">'+esc(w.m)+'</div>';
       }else{
-        h+='<div class="text-sm text-gray-400 mb-2">Write the hanzi</div>';
+        h+='<div class="text-sm text-gray-400 mb-2">'+(S.testMode==='write'?'Draw the hanzi':'Which hanzi is this?')+'</div>';
         h+='<div class="text-2xl text-amber-400 font-chinese mb-1">'+esc(w.p)+'</div>';
         h+='<div class="text-base text-gray-300">'+esc(w.m)+'</div>';
       }
       h+='</div>';
 
       if(S.testMode==='write'){
-        // Write mode: text input + check
-        h+='<div class="mb-4">'+writeInput('Type hanzi...')+'</div>';
+        // Canvas quiz
+        h+=canvasHTML(180);
+        h+='<div class="mt-3">';
         if(!S.qa){
-          h+='<button onclick="S.qa=true;if(S.writeVal.trim()===S.qcor)S.qs++;render()" class="w-full py-3.5 rounded-[14px] font-semibold text-[15px] mb-3" style="background:#dc2626;border:none;color:#fff;cursor:pointer">Check</button>';
+          h+='<button onclick="saveCanvasData();S.qa=true;render()" class="w-full py-3.5 rounded-[14px] font-semibold text-[15px]" style="background:#dc2626;border:none;color:#fff;cursor:pointer">Reveal Answer</button>';
         }else{
-          var isOk=S.writeVal.trim()===w.h;
-          h+='<div class="text-center py-3 rounded-xl mb-3 font-medium" style="background:'+(isOk?'rgba(16,185,129,0.15)':'rgba(239,68,68,0.15)')+';color:'+(isOk?'#6ee7b7':'#fca5a5')+'">'+(isOk?'\uD83C\uDF89 Correct!':'\u274C Answer: <span class="font-chinese text-lg">'+esc(w.h)+'</span>')+'</div>';
-          h+='<button onclick="nextQ()" class="w-full py-3.5 rounded-[14px] font-semibold text-[15px]" style="background:#dc2626;border:none;color:#fff;cursor:pointer">'+(S.qi+1>=S.qw.length?'\uD83D\uDCCA Results':'Next \u2192')+'</button>';
+          h+='<div class="text-center py-3 rounded-xl mb-3"><div class="text-5xl font-bold font-chinese mb-1">'+esc(w.h)+'</div><div class="text-sm text-gray-400">Did you get it right?</div></div>';
+          h+='<div class="flex gap-2.5 mb-3"><button onclick="S.qs++;nextQ()" class="flex-1 py-3 rounded-[14px] font-semibold" style="background:#059669;border:none;color:#fff;cursor:pointer">\u2713 Got it</button><button onclick="nextQ()" class="flex-1 py-3 rounded-[14px] font-semibold" style="background:#dc2626;border:none;color:#fff;cursor:pointer">\u2717 Missed</button></div>';
         }
+        h+='</div>';
       }else{
         // Multiple choice
         h+='<div class="flex flex-col gap-2.5 mb-4">';
@@ -486,44 +552,41 @@ else if(S.screen==='flash'){
     h+=testModeTabs();
 
     if(S.testMode==='write'){
-      // WRITE FLASH: Show pinyin+meaning, write, then reveal
-      h+='<div class="rounded-[20px] p-6 border border-white/[0.08] text-center mb-4" style="background:linear-gradient(145deg,#151a2d,#1b2240);min-height:320px">';
-      h+='<div class="text-2xl text-amber-400 mb-2 font-chinese">'+esc(w.p)+'</div>';
-      h+='<div class="text-[17px] text-gray-300 mb-2">'+esc(w.m)+'</div>';
-      if(w.mr)h+='<div class="text-sm text-gray-500 mb-4">'+esc(w.mr)+'</div>';
-      h+='<div class="border-t border-white/5 pt-4" onclick="event.stopPropagation()">'+writeInput('Write hanzi...');
+      // WRITE FLASH with canvas
+      h+='<div class="rounded-[20px] p-5 border border-white/[0.08] mb-4" style="background:linear-gradient(145deg,#151a2d,#1b2240)">';
+      h+='<div class="text-center mb-4">';
+      h+='<div class="text-2xl text-amber-400 mb-1 font-chinese">'+esc(w.p)+'</div>';
+      h+='<div class="text-[17px] text-gray-300">'+esc(w.m)+'</div>';
+      if(w.mr)h+='<div class="text-sm text-gray-500 mt-0.5">'+esc(w.mr)+'</div>';
+      h+='</div>';
+      h+=canvasHTML(200);
+      h+='<div class="mt-4 text-center">';
       if(S.ff){
-        var isMatch=S.writeVal.trim()===w.h;
-        h+='<div class="mt-3 py-2 rounded-xl text-sm font-medium" style="background:'+(isMatch?'rgba(16,185,129,0.15)':'rgba(239,68,68,0.15)')+';color:'+(isMatch?'#6ee7b7':'#fca5a5')+'">'+(isMatch?'\uD83C\uDF89 Correct!':'\u274C')+'</div>';
-        h+='<div class="text-6xl font-bold mt-3 leading-none font-chinese">'+esc(w.h)+'</div>';
+        h+='<div class="rounded-xl p-4" style="background:rgba(0,0,0,0.3)">';
         if(w.t)h+=toneRuleBadge(w);
+        h+='<div class="text-6xl font-bold leading-none font-chinese mb-2">'+esc(w.h)+'</div>';
+        if(w.s)h+='<div class="text-sm text-gray-400 font-chinese mt-2">'+esc(w.s)+'</div>';
+        h+='</div>';
       }else{
-        h+='<button onclick="event.stopPropagation();S.ff=true;render()" class="mt-3 px-6 py-2.5 rounded-xl text-sm font-medium" style="background:#dc2626;border:none;color:#fff;cursor:pointer">Reveal Answer</button>';
+        h+='<button onclick="event.stopPropagation();saveCanvasData();S.ff=true;render()" class="px-8 py-2.5 rounded-xl text-sm font-medium" style="background:#dc2626;border:none;color:#fff;cursor:pointer">Reveal Answer</button>';
       }
       h+='</div></div>';
     }else{
-      // FLIP CARD for read & recognize
+      // FLIP CARDS for read/recognize
       h+='<div onclick="S.ff=!S.ff;render()" class="perspective cursor-pointer mb-4" style="height:320px"><div class="preserve-3d relative w-full" style="height:320px;'+(S.ff?'transform:rotateY(180deg)':'')+'">';
-
       if(S.testMode==='read'){
-        // Front: Hanzi
         h+='<div class="backface-hidden absolute w-full rounded-[20px] p-8 border border-white/[0.08] flex flex-col items-center justify-center" style="background:linear-gradient(145deg,#151a2d,#1b2240);height:320px">';
         if(w.t)h+=toneRuleBadge(w);
         h+='<div class="text-7xl font-bold leading-none font-chinese">'+esc(w.h)+'</div><div class="text-gray-600 text-xs mt-4">tap to flip</div></div>';
-        // Back: Pinyin+Meaning
         h+='<div class="backface-hidden rotate-y-180 absolute w-full rounded-[20px] p-8 border border-white/[0.08] flex flex-col items-center justify-center" style="background:linear-gradient(145deg,#151a2d,#1b2240);height:320px"><div class="text-4xl font-bold mb-2.5 font-chinese">'+esc(w.h)+'</div><div class="text-2xl text-amber-400 mb-2 font-chinese">'+esc(w.p)+'</div><div class="text-[17px] text-gray-300 mb-1">'+esc(w.m)+'</div>'+(w.mr?'<div class="text-sm text-gray-500">'+esc(w.mr)+'</div>':'')+(w.s?'<div class="text-sm text-gray-400 mt-2.5 text-center font-chinese">'+esc(w.s)+'</div>':'')+'</div>';
       }else{
-        // RECOGNIZE: Front=Pinyin+Meaning, Back=Hanzi
         h+='<div class="backface-hidden absolute w-full rounded-[20px] p-8 border border-white/[0.08] flex flex-col items-center justify-center" style="background:linear-gradient(145deg,#151a2d,#1b2240);height:320px">';
-        h+='<div class="text-2xl text-amber-400 mb-2 font-chinese">'+esc(w.p)+'</div>';
-        h+='<div class="text-[17px] text-gray-300 mb-1">'+esc(w.m)+'</div>';
+        h+='<div class="text-2xl text-amber-400 mb-2 font-chinese">'+esc(w.p)+'</div><div class="text-[17px] text-gray-300 mb-1">'+esc(w.m)+'</div>';
         if(w.mr)h+='<div class="text-sm text-gray-500">'+esc(w.mr)+'</div>';
         h+='<div class="text-gray-600 text-xs mt-4">tap to see hanzi</div></div>';
-        // Back: Hanzi
         h+='<div class="backface-hidden rotate-y-180 absolute w-full rounded-[20px] p-8 border border-white/[0.08] flex flex-col items-center justify-center" style="background:linear-gradient(145deg,#151a2d,#1b2240);height:320px">';
         if(w.t)h+=toneRuleBadge(w);
-        h+='<div class="text-7xl font-bold mb-3 leading-none font-chinese">'+esc(w.h)+'</div>';
-        h+='<div class="text-xl text-amber-400 font-chinese">'+esc(w.p)+'</div>';
+        h+='<div class="text-7xl font-bold mb-3 leading-none font-chinese">'+esc(w.h)+'</div><div class="text-xl text-amber-400 font-chinese">'+esc(w.p)+'</div>';
         if(w.s)h+='<div class="text-sm text-gray-400 mt-2.5 text-center font-chinese">'+esc(w.s)+'</div>';
         h+='</div>';
       }
@@ -531,7 +594,7 @@ else if(S.screen==='flash'){
     }
 
     h+='<div class="mb-3.5"><div class="flex justify-center gap-2">'+rateBtns(w.id,38)+'</div></div>';
-    h+='<div class="flex gap-2.5"><button onclick="S.fi=Math.max(S.fi-1,0);S.ff=false;S.writeVal=\'\';render()" class="flex-1 py-3.5 rounded-[14px] font-semibold" style="background:#374151;border:none;color:#fff;cursor:pointer">\u2190 Prev</button><button onclick="S.fi=Math.min(S.fi+1,'+(S.fw.length-1)+');S.ff=false;S.writeVal=\'\';render()" class="flex-1 py-3.5 rounded-[14px] font-semibold" style="background:#059669;border:none;color:#fff;cursor:pointer">Next \u2192</button></div></div>';
+    h+='<div class="flex gap-2.5"><button onclick="S.fi=Math.max(S.fi-1,0);S.ff=false;canvasData=null;render()" class="flex-1 py-3.5 rounded-[14px] font-semibold" style="background:#374151;border:none;color:#fff;cursor:pointer">\u2190 Prev</button><button onclick="S.fi=Math.min(S.fi+1,'+(S.fw.length-1)+');S.ff=false;canvasData=null;render()" class="flex-1 py-3.5 rounded-[14px] font-semibold" style="background:#059669;border:none;color:#fff;cursor:pointer">Next \u2192</button></div></div>';
   }
 }
 
@@ -576,10 +639,9 @@ else if(S.screen==='progress'){
 
 el.innerHTML=h;
 
-// Auto-focus write input after render
-if((S.testMode==='write')&&(S.screen==='study'||S.screen==='flash'||S.screen==='quiz')){
-  var inp=el.querySelector('.write-input');
-  if(inp&&!S.sRev&&!S.ff&&!S.qa)setTimeout(function(){inp.focus()},50);
+// Init canvas after DOM update
+if(S.testMode==='write'){
+  setTimeout(initCanvas,30);
 }
 }
 
