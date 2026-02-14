@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>汉语学习 - Chinese Study App</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>汉</text></svg>">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { chinese: ['"Noto Sans SC"', 'system-ui', 'sans-serif'] }
+        }
+      }
+    }
+  </script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, -apple-system, sans-serif; background: #0c1021; color: #f1f1f4; min-height: 100vh; }
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+    @keyframes fadeUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
+    .fade-up { animation: fadeUp 0.35s ease-out forwards; opacity: 0; }
+    .card-hover { transition: all 0.25s ease; }
+    .card-hover:hover { transform: translateY(-2px); border-color: rgba(239,68,68,0.35); box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
+    .perspective { perspective: 1000px; }
+    .preserve-3d { transform-style: preserve-3d; transition: transform 0.5s; }
+    .backface-hidden { backface-visibility: hidden; }
+    .rotate-y-180 { transform: rotateY(180deg); }
+    .rating-btn { transition: all 0.2s ease; }
+    .rating-btn:hover { transform: scale(1.1) !important; }
+    .progress-fill { transition: width 0.4s ease; }
+    .screen { display: none; }
+    .screen.active { display: block; }
+  </style>
+</head>
+<body>
+  <div id="app" class="max-w-[480px] mx-auto min-h-screen pb-5"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script>
+// ═══════════════════════════════════════════════════════════
+// CONFIG
+// ═══════════════════════════════════════════════════════════
+const SB_URL = 'https://ulgrfumbwjovbjzjiems.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVsZ3JmdW1id2pvdmJqemppZW1zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjczNzIyNjcsImV4cCI6MjA4Mjk0ODI2N30.ix5Vh4Y3GXNbQbzVtTD_WSko0L3cr5q_eCnTuDEMh7M';
+const sb = window.supabase.createClient(SB_URL, SB_KEY);
+
+// ═══════════════════════════════════════════════════════════
+// CONSTANTS
+// ═══════════════════════════════════════════════════════════
+const RATINGS = [
+  { v:0, icon:'○', nm:'Not Marked',     bg:'#4b5563' },
+  { v:1, icon:'✓', nm:'Monthly Review',  bg:'#059669' },
+  { v:2, icon:'💬', nm:"Can't Converse", bg:'#2563eb' },
+  { v:3, icon:'✍', nm:"Can't Write",    bg:'#7c3aed' },
+  { v:4, icon:'🤔', nm:"Can't Use",      bg:'#d97706' },
+  { v:5, icon:'✗', nm:"Don't Know",      bg:'#dc2626' },
+];
+
+const SRC_COLORS = {
+  H:['#ef4444','#b91c1c'], '百':['#f59e0b','#b45309'], '咪':['#10b981','#047857'],
+  '书':['#3b82f6','#1d4ed8'], '数':['#8b5cf6','#6d28d9']
+};
+const RULE_COLORS = ['#ef4444','#f59e0b','#3b82f6','#10b981','#8b5cf6'];
+const CATEGORIES = ['Chinese Class', 'Self Study'];
+
+// ═══════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════
+let state = {
+  screen: 'loading',
+  history: [],
+  activeMode: 'study',
+  activeCat: 'Chinese Class',
+  sources: [],
+  allWordMeta: [],
+  wordCounts: {},
+  toneCounts: {},
+  currentSource: null,
+  words: [],        // words for current source
+  toneRules: [],
+  toneRuleWords: [],
+  ratings: JSON.parse(localStorage.getItem('hanyu_ratings') || '{}'),
+  // Study
+  studyIdx: 0,
+  studyRevealed: false,
+  studyFilter: null,
+  // Quiz
+  quizWords: [],
+  quizIdx: 0,
+  quizScore: 0,
+  quizAnswered: false,
+  quizSelected: null,
+  quizOptions: [],
+  quizCorrect: '',
+  quizType: 'm',
+  quizDone: false,
+  // Flash
+  flashWords: [],
+  flashIdx: 0,
+  flashFlipped: false,
+};
+
+function setState(updates) {
+  Object.assign(state, updates);
+  render();
+}
+
+function saveRatings() {
+  localStorage.setItem('hanyu_ratings', JSON.stringify(state.ratings));
+}
+
+function rateWord(wordId, value) {
+  state.ratings[wordId] = value;
+  saveRatings();
+  render();
+}
+
+function nav(screen) {
+  state.history.push(state.screen);
+  state.screen = screen;
+  render();
+}
+
+function goBack() {
+  state.screen = state.history.pop() || 'home';
+  render();
+}
+
+function goHome() {
+  state.screen = 'home';
+  state.history = [];
+  render();
+}
+
+// ═══════════════════════════════════════════════════════════
+// DATA LOADING
+// ═══════════════════════════════════════════════════════════
+async function loadApp() {
+  try {
+    const [srcRes, metaRes, rulesRes, trwRes] = await Promise.all([
+      sb.from('chinese_study_app_sources').select('*').order('display_order'),
+      sb.from('chinese_study_app_words').select('id, source_id, has_tone_rule'),
+      sb.from('chinese_study_app_tone_rules').select('*').order('rule_number'),
+      sb.from('chinese_study_app_tone_rule_words').select('*').order('rule_id'),
+    ]);
+
+    const sources = srcRes.data || [];
+    const meta = metaRes.data || [];
+    const wc = {}, tc = {};
+    meta.forEach(w => {
+      wc[w.source_id] = (wc[w.source_id]||0) + 1;
+      if (w.has_tone_rule) tc[w.source_id] = (tc[w.source_id]||0) + 1;
+    });
+
+    setState({
+      screen: 'home',
+      sources,
+      allWordMeta: meta,
+      wordCounts: wc,
+      toneCounts: tc,
+      toneRules: rulesRes.data || [],
+      toneRuleWords: trwRes.data || [],
+    });
+  } catch(e) {
+    document.getElementById('app').innerHTML = `
+      <div class="flex items-center justify-center min-h-screen">
+        <div class="text-center p-8">
+          <div class="text-5xl mb-4">⚠️</div>
+          <div class="text-lg font-semibold mb-2">Connection Error</div>
+          <div class="text-gray-400 text-sm">${e.message}</div>
+          <button onclick="loadApp()" class="mt-4 px-6 py-2 bg-red-600 rounded-xl text-sm">Retry</button>
+        </div>
+      </div>`;
+  }
+}
+
+async function loadSourceWords(sourceId) {
+  const { data } = await sb.from('chinese_study_app_words').select('*').eq('source_id', sourceId).order('display_order');
+  return data || [];
+}
+
+async function openSource(source) {
+  state.currentSource = source;
+  state.studyFilter = null;
+  const words = await loadSourceWords(source.id);
+  state.words = words;
+
+  if (state.activeMode === 'study') {
+    state.studyIdx = 0;
+    state.studyRevealed = false;
+    nav('study');
+  } else if (state.activeMode === 'quiz') {
+    startQuiz(words);
+  } else if (state.activeMode === 'flash') {
+    startFlash(words);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// QUIZ LOGIC
+// ═══════════════════════════════════════════════════════════
+function startQuiz(words) {
+  if (words.length < 4) { alert('Need at least 4 words!'); return; }
+  const sh = [...words].sort(() => Math.random()-0.5).slice(0, 20);
+  state.quizWords = sh;
+  state.quizIdx = 0;
+  state.quizScore = 0;
+  state.quizDone = false;
+  prepareQuizQ(sh, 0, words);
+  nav('quiz');
+}
+
+function prepareQuizQ(qw, qi, allWords) {
+  const w = qw[qi]; if (!w) return;
+  const t = Math.random() > 0.5 ? 'm' : 'p';
+  state.quizType = t;
+  const cor = t === 'm' ? (w.meaning||'') : w.pinyin;
+  state.quizCorrect = cor;
+  const pool = allWords.filter(x=>x.id!==w.id).map(x => t==='m' ? (x.meaning||'') : x.pinyin).filter(Boolean);
+  const uniq = [...new Set(pool)];
+  const wrong = uniq.sort(()=>Math.random()-0.5).slice(0,3);
+  state.quizOptions = [cor,...wrong].sort(()=>Math.random()-0.5);
+  state.quizAnswered = false;
+  state.quizSelected = null;
+}
+
+function answerQuiz(opt) {
+  if (state.quizAnswered) return;
+  state.quizAnswered = true;
+  state.quizSelected = opt;
+  if (opt === state.quizCorrect) state.quizScore++;
+  render();
+}
+
+function nextQuiz() {
+  const ni = state.quizIdx + 1;
+  if (ni >= state.quizWords.length) { state.quizDone = true; render(); return; }
+  state.quizIdx = ni;
+  prepareQuizQ(state.quizWords, ni, state.words);
+  render();
+}
+
+// ═══════════════════════════════════════════════════════════
+// FLASH LOGIC
+// ═══════════════════════════════════════════════════════════
+function startFlash(words) {
+  if (!words.length) return;
+  state.flashWords = [...words].sort(() => Math.random()-0.5);
+  state.flashIdx = 0;
+  state.flashFlipped = false;
+  nav('flash');
+}
+
+// ═══════════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════════
+function esc(s) { if(!s) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+
+function getFiltered() {
+  if (state.studyFilter === null) return state.words;
+  return state.words.filter(w => (state.ratings[w.id] ?? -1) === state.studyFilter);
+}
+
+function ratingBtns(wordId, size) {
+  size = size || 42;
+  const cr = state.ratings[wordId] ?? -1;
+  return RATINGS.map(r => {
+    const active = cr === r.v;
+    return `<button onclick="event.stopPropagation();rateWord(${wordId},${r.v})" title="${esc(r.nm)}"
+      class="rating-btn rounded-full flex items-center justify-center"
+      style="width:${size}px;height:${size}px;border:${active?'2px solid #fff':'2px solid transparent'};background:${r.bg};color:#fff;font-size:${size>38?16:13}px;opacity:${active?1:0.5};transform:${active?'scale(1.15)':'scale(1)'};cursor:pointer">
+      ${r.icon}</button>`;
+  }).join('');
+}
+
+function progressBar(cur, total, c1, c2) {
+  c1 = c1||'#ef4444'; c2 = c2||'#f59e0b';
+  const pct = total > 0 ? (cur/total)*100 : 0;
+  return `<div class="h-[5px] bg-gray-800 rounded-full overflow-hidden mb-4">
+    <div class="h-full rounded-full progress-fill" style="width:${pct}%;background:linear-gradient(90deg,${c1},${c2})"></div>
+  </div>`;
+}
+
+function header(title, right) {
+  return `<div class="sticky top-0 z-40 border-b border-white/5 px-4 h-[52px] flex items-center gap-3" style="background:rgba(12,16,33,0.92);backdrop-filter:blur(16px)">
+    <button onclick="goBack()" class="text-gray-400 hover:text-white text-xl p-1" style="background:none;border:none;cursor:pointer">←</button>
+    <span class="font-semibold text-base flex-1">${esc(title)}</span>
+    ${right||''}
+  </div>`;
+}
+
+// ═══════════════════════════════════════════════════════════
+// KEYBOARD
+// ═══════════════════════════════════════════════════════════
+document.addEventListener('keydown', e => {
+  if (state.screen === 'study') {
+    const filtered = getFiltered();
+    if (e.key==='ArrowRight'||e.key===' ') { e.preventDefault(); state.studyIdx = Math.min(state.studyIdx+1, filtered.length-1); state.studyRevealed=false; render(); }
+    if (e.key==='ArrowLeft') { e.preventDefault(); state.studyIdx = Math.max(state.studyIdx-1, 0); state.studyRevealed=false; render(); }
+    if (e.key==='Enter') { e.preventDefault(); state.studyRevealed=!state.studyRevealed; render(); }
+    if (e.key>='0'&&e.key<='5') { const w=filtered[state.studyIdx]; if(w) rateWord(w.id, parseInt(e.key)); }
+  }
+  if (state.screen === 'flash') {
+    if (e.key==='ArrowRight'||e.key===' ') { e.preventDefault(); state.flashIdx = Math.min(state.flashIdx+1, state.flashWords.length-1); state.flashFlipped=false; render(); }
+    if (e.key==='ArrowLeft') { e.preventDefault(); state.flashIdx = Math.max(state.flashIdx-1, 0); state.flashFlipped=false; render(); }
+    if (e.key==='Enter') { e.preventDefault(); state.flashFlipped=!state.flashFlipped; render(); }
+  }
+  if (e.key==='Escape') goBack();
+});
+
+// ═══════════════════════════════════════════════════════════
+// RENDER
+// ═══════════════════════════════════════════════════════════
+function render() {
+  const el = document.getElementById('app');
+  const s = state;
+  let html = '';
+
+  // ═══ LOADING ═══
+  if (s.screen === 'loading') {
+    html = `<div class="flex items-center justify-center min-h-screen">
+      <div class="text-center"><div class="text-5xl mb-4 font-chinese">汉语</div><div class="text-gray-400">Loading...</div></div>
+    </div>`;
+  }
+
+  // ═══ HOME ═══
+  else if (s.screen === 'home') {
+    const totalW = s.allWordMeta.length;
+    const totalT = s.allWordMeta.filter(w=>w.has_tone_rule).length;
+    const catSources = s.sources.filter(x => x.category === s.activeCat);
+    const catCount = catSources.reduce((a,x) => a + (s.wordCounts[x.id]||0), 0);
+
+    // Layer 1: Mode tabs
+    html += `<div class="border-b border-white/[0.06]" style="background:#151a2d"><div class="flex pt-3">`;
+    [
+      {key:'study',icon:'📖',label:'Study'},
+      {key:'quiz',icon:'🧠',label:'Quiz'},
+      {key:'flash',icon:'🃏',label:'Flash'},
+      {key:'tone',icon:'🎵',label:'Tones'},
+    ].forEach(m => {
+      const active = m.key === s.activeMode;
+      const border = active && m.key!=='tone' ? 'border-bottom:3px solid #ef4444' : 'border-bottom:3px solid transparent';
+      html += `<button onclick="${m.key==='tone'?'nav(\\'tone\\')':'state.activeMode=\\''+m.key+'\\';render()'}"
+        class="flex-1 flex flex-col items-center gap-1 pb-3 pt-2.5"
+        style="background:none;border:none;cursor:pointer;color:${active?'#fff':'#6b7280'};${border}">
+        <span class="text-2xl" style="filter:${active?'none':'grayscale(60%) brightness(0.7)'}">${m.icon}</span>
+        <span class="text-xs" style="font-weight:${active?700:500};letter-spacing:0.3px">${m.label}</span>
+      </button>`;
+    });
+    // Stats btn
+    html += `<button onclick="nav('progress')" class="flex flex-col items-center gap-1 pb-3 pt-2.5 px-3" style="background:none;border:none;cursor:pointer;color:#6b7280;border-bottom:3px solid transparent">
+      <span class="text-2xl" style="filter:grayscale(60%) brightness(0.7)">📊</span><span class="text-[11px]" style="font-weight:500">Stats</span></button>`;
+    html += `</div></div>`;
+
+    // Layer 2: Category pills
+    html += `<div class="px-4 pt-3 pb-2 flex gap-2">`;
+    CATEGORIES.forEach(cat => {
+      html += `<button onclick="state.activeCat='${cat}';render()"
+        class="px-5 py-2 rounded-3xl text-[13px] font-semibold"
+        style="border:none;cursor:pointer;background:${s.activeCat===cat?'#ef4444':'rgba(255,255,255,0.07)'};color:${s.activeCat===cat?'#fff':'#9ca3af'}">
+        ${cat}</button>`;
+    });
+    html += `</div>`;
+
+    // Layer 3: Source cards
+    html += `<div class="px-4 pt-2 pb-4">
+      <div class="flex justify-between items-center mb-3">
+        <h2 class="text-lg font-bold">Select Source</h2>
+        <span class="text-[13px] text-gray-500">${catCount} total words</span>
+      </div>`;
+
+    catSources.forEach((src, i) => {
+      const [c1,c2] = SRC_COLORS[src.icon] || ['#6b7280','#4b5563'];
+      const wc = s.wordCounts[src.id]||0;
+      const tc = s.toneCounts[src.id]||0;
+      html += `<div onclick="openSource(state.sources.find(x=>x.id===${src.id}))"
+        class="card-hover rounded-2xl p-4 mb-2.5 flex items-center gap-3.5 cursor-pointer fade-up"
+        style="background:linear-gradient(135deg,#151a2d,#1b2240);border:1px solid rgba(255,255,255,0.06);animation-delay:${i*60}ms">
+        <div class="w-[52px] h-[52px] rounded-[14px] flex items-center justify-center text-xl font-bold flex-shrink-0"
+          style="background:linear-gradient(135deg,${c1},${c2});box-shadow:0 4px 12px rgba(0,0,0,0.3)">${src.icon}</div>
+        <div class="flex-1"><div class="font-semibold text-[15px]">${esc(src.label)}</div>
+          <div class="text-[13px] text-gray-400 mt-0.5">${wc} words${tc?` · ${tc} tone rules`:''}</div></div>
+        <span class="text-gray-600 text-xl">→</span>
+      </div>`;
+    });
+
+    if (!catSources.length) html += `<div class="text-center py-10 text-gray-500">No sources in this category</div>`;
+    html += `</div>`;
+
+    // Welcome bar
+    html += `<div class="px-4 pt-2"><div class="rounded-2xl p-4 border border-white/5 text-center" style="background:linear-gradient(135deg,#151a2d,#1b2240)">
+      <div class="text-sm text-gray-400 mb-1">Welcome, <span class="text-red-400 font-semibold">Aniket</span></div>
+      <div class="text-xs text-gray-600">Guest mode · Ratings saved locally</div>
+    </div></div>`;
+  }
+
+  // ═══ STUDY ═══
+  else if (s.screen === 'study') {
+    const filtered = getFiltered();
+    const w = filtered[s.studyIdx];
+
+    html += header(s.currentSource?.label || 'Study', `<span class="text-sm text-gray-400">${s.studyIdx+1}/${filtered.length}</span>`);
+
+    if (!w) {
+      html += `<div class="text-center py-20 text-gray-500">${s.studyFilter!==null?'No words with this rating':'No words loaded'}</div>`;
+    } else {
+      html += `<div class="p-4">`;
+      html += progressBar(s.studyIdx+1, filtered.length);
+
+      // Filter pills
+      html += `<div class="flex gap-1.5 flex-wrap justify-center mb-3">
+        <button onclick="state.studyFilter=null;state.studyIdx=0;state.studyRevealed=false;render()"
+          class="px-2.5 py-1 rounded-2xl text-[11px] font-medium" style="background:${s.studyFilter===null?'#ef4444':'#374151'};border:none;color:#fff;cursor:pointer">All (${s.words.length})</button>`;
+      RATINGS.forEach(r => {
+        html += `<button onclick="state.studyFilter=${r.v};state.studyIdx=0;state.studyRevealed=false;render()"
+          class="px-2 py-1 rounded-2xl text-[11px]" style="background:${s.studyFilter===r.v?r.bg:'#374151'};border:none;color:#fff;cursor:pointer">${r.icon}</button>`;
+      });
+      html += `</div>`;
+
+      // Card
+      html += `<div onclick="state.studyRevealed=!state.studyRevealed;render()"
+        class="rounded-[20px] p-8 border border-white/[0.08] text-center cursor-pointer mb-4"
+        style="background:linear-gradient(145deg,#151a2d,#1b2240);min-height:260px">`;
+      if (w.has_tone_rule) html += `<div class="text-amber-400 text-xs mb-1.5">⭐ Tone Rule</div>`;
+      html += `<div class="text-7xl font-bold mb-4 leading-none font-chinese">${esc(w.hanzi)}</div>`;
+      html += `<div class="text-2xl text-amber-400 mb-2 font-chinese" style="opacity:${s.studyRevealed?1:0};transition:opacity 0.3s">${esc(w.pinyin)}</div>`;
+      html += `<div class="text-[17px] text-gray-300" style="opacity:${s.studyRevealed?1:0};transition:opacity 0.3s">${esc(w.meaning)}</div>`;
+      if (w.marathi) html += `<div class="text-sm text-gray-500 mt-1" style="opacity:${s.studyRevealed?1:0};transition:opacity 0.3s">${esc(w.marathi)}</div>`;
+      if (w.sentence) html += `<div class="text-sm text-gray-400 mt-3 border-t border-white/5 pt-3 font-chinese" style="opacity:${s.studyRevealed?1:0};transition:opacity 0.3s">${esc(w.sentence)}</div>`;
+      if (w.hint) html += `<div class="text-xs text-purple-400 mt-2 italic" style="opacity:${s.studyRevealed?1:0};transition:opacity 0.3s">💡 ${esc(w.hint)}</div>`;
+      if (w.supporting_word_1 || w.supporting_word_2) {
+        const sw = [w.supporting_word_1, w.supporting_word_2].filter(Boolean).join(' · ');
+        html += `<div class="text-[11px] text-gray-500 mt-1.5" style="opacity:${s.studyRevealed?1:0};transition:opacity 0.3s">${esc(sw)}</div>`;
+      }
+      if (!s.studyRevealed) html += `<div class="text-gray-600 text-xs mt-4">Tap to reveal</div>`;
+      html += `</div>`;
+
+      // Rating
+      html += `<div class="text-center mb-3.5"><div class="text-xs text-gray-400 mb-2">Rate:</div>
+        <div class="flex justify-center gap-2">${ratingBtns(w.id)}</div></div>`;
+
+      // Nav
+      html += `<div class="flex gap-2.5">
+        <button onclick="state.studyIdx=Math.max(state.studyIdx-1,0);state.studyRevealed=false;render()"
+          class="flex-1 py-3.5 rounded-[14px] font-semibold text-[15px]" style="background:#374151;border:none;color:#fff;cursor:pointer">← Prev</button>
+        <button onclick="state.studyIdx=Math.min(state.studyIdx+1,${filtered.length-1});state.studyRevealed=false;render()"
+          class="flex-1 py-3.5 rounded-[14px] font-semibold text-[15px]" style="background:#dc2626;border:none;color:#fff;cursor:pointer">Next →</button>
+      </div></div>`;
+    }
+  }
+
+  // ═══ QUIZ ═══
+  else if (s.screen === 'quiz') {
+    if (s.quizDone) {
+      const pct = Math.round((s.quizScore/s.quizWords.length)*100);
+      const emoji = pct>=90?'🏆':pct>=70?'🎉':pct>=50?'👍':'💪';
+      html += header('Results');
+      html += `<div class="text-center pt-10 px-4">
+        <div class="text-6xl mb-4">${emoji}</div>
+        <div class="text-5xl font-extrabold mb-2">${pct}%</div>
+        <div class="text-gray-400 mb-1">${s.quizScore} / ${s.quizWords.length} correct</div>
+        <div class="text-gray-500 text-sm mb-7">${esc(s.currentSource?.label)}</div>
+        <div class="flex gap-2.5">
+          <button onclick="startQuiz(state.words)" class="flex-1 py-3.5 rounded-[14px] font-semibold" style="background:#d97706;border:none;color:#fff;cursor:pointer">Try Again</button>
+          <button onclick="goHome()" class="flex-1 py-3.5 rounded-[14px] font-semibold" style="background:#374151;border:none;color:#fff;cursor:pointer">Home</button>
+        </div></div>`;
+    } else {
+      const w = s.quizWords[s.quizIdx];
+      if (!w) { html += header('Quiz'); }
+      else {
+        html += header(s.currentSource?.label || 'Quiz', `<span class="text-sm text-gray-400">Score: ${s.quizScore}/${s.quizIdx+(s.quizAnswered?1:0)}</span>`);
+        html += `<div class="p-4">
+          <div class="text-sm text-gray-400 mb-1.5">${s.quizIdx+1} / ${s.quizWords.length}</div>`;
+        html += progressBar(s.quizIdx+1, s.quizWords.length, '#f59e0b', '#ef4444');
+
+        // Question
+        html += `<div class="rounded-[20px] p-7 border border-white/[0.08] text-center mb-5" style="background:linear-gradient(145deg,#151a2d,#1b2240)">
+          <div class="text-sm text-gray-400 mb-2">${s.quizType==='m'?'What does this mean?':'What is the pinyin?'}</div>
+          <div class="text-6xl font-bold font-chinese">${esc(w.hanzi)}</div></div>`;
+
+        // Options
+        html += `<div class="flex flex-col gap-2.5 mb-4">`;
+        s.quizOptions.forEach((opt, i) => {
+          let bg = '#1b2240', br = 'rgba(255,255,255,0.08)';
+          if (s.quizAnswered) {
+            if (opt === s.quizCorrect) { bg='rgba(16,185,129,0.12)'; br='#10b981'; }
+            else if (opt === s.quizSelected && opt !== s.quizCorrect) { bg='rgba(239,68,68,0.12)'; br='#ef4444'; }
+          }
+          html += `<button onclick="answerQuiz('${esc(opt).replace(/'/g,"\\'")}')"
+            class="rounded-[14px] py-3.5 px-4 text-[15px] text-left" style="background:${bg};border:2px solid ${br};color:#f1f1f4;cursor:${s.quizAnswered?'default':'pointer'};transition:all 0.2s">${esc(opt)}</button>`;
+        });
+        html += `</div>`;
+
+        if (s.quizAnswered) {
+          const ok = s.quizSelected === s.quizCorrect;
+          html += `<div class="text-center py-3 rounded-xl mb-3 font-medium" style="background:${ok?'rgba(16,185,129,0.15)':'rgba(239,68,68,0.15)'};color:${ok?'#6ee7b7':'#fca5a5'}">
+            ${ok?'🎉 Correct!':'❌ Answer: '+esc(s.quizCorrect)}</div>`;
+          html += `<button onclick="nextQuiz()" class="w-full py-3.5 rounded-[14px] font-semibold text-[15px]" style="background:#dc2626;border:none;color:#fff;cursor:pointer">
+            ${s.quizIdx+1>=s.quizWords.length?'📊 Results':'Next →'}</button>`;
+        }
+        html += `</div>`;
+      }
+    }
+  }
+
+  // ═══ FLASHCARDS ═══
+  else if (s.screen === 'flash') {
+    const w = s.flashWords[s.flashIdx];
+    html += header(s.currentSource?.label || 'Flash', `<span class="text-sm text-gray-400">${s.flashIdx+1}/${s.flashWords.length}</span>`);
+
+    if (!w) {
+      html += `<div class="text-center py-20 text-gray-500">No words loaded</div>`;
+    } else {
+      html += `<div class="p-4">`;
+      html += progressBar(s.flashIdx+1, s.flashWords.length, '#10b981', '#14b8a6');
+
+      // Flip card
+      html += `<div onclick="state.flashFlipped=!state.flashFlipped;render()" class="perspective cursor-pointer mb-4" style="height:320px">
+        <div class="preserve-3d relative w-full" style="height:320px;${s.flashFlipped?'transform:rotateY(180deg)':''}">
+          <div class="backface-hidden absolute w-full rounded-[20px] p-8 border border-white/[0.08] flex flex-col items-center justify-center" style="background:linear-gradient(145deg,#151a2d,#1b2240);height:320px">
+            ${w.has_tone_rule?'<div class="text-amber-400 text-xs mb-2">⭐ Tone Rule</div>':''}
+            <div class="text-7xl font-bold leading-none font-chinese">${esc(w.hanzi)}</div>
+            <div class="text-gray-600 text-xs mt-4">tap to flip</div>
+          </div>
+          <div class="backface-hidden rotate-y-180 absolute w-full rounded-[20px] p-8 border border-white/[0.08] flex flex-col items-center justify-center" style="background:linear-gradient(145deg,#151a2d,#1b2240);height:320px">
+            <div class="text-4xl font-bold mb-2.5 font-chinese">${esc(w.hanzi)}</div>
+            <div class="text-2xl text-amber-400 mb-2 font-chinese">${esc(w.pinyin)}</div>
+            <div class="text-[17px] text-gray-300 mb-1">${esc(w.meaning)}</div>
+            ${w.marathi?`<div class="text-sm text-gray-500">${esc(w.marathi)}</div>`:''}
+            ${w.sentence?`<div class="text-sm text-gray-400 mt-2.5 text-center font-chinese">${esc(w.sentence)}</div>`:''}
+          </div>
+        </div>
+      </div>`;
+
+      // Rating
+      html += `<div class="mb-3.5"><div class="flex justify-center gap-2">${ratingBtns(w.id, 38)}</div></div>`;
+
+      // Nav
+      html += `<div class="flex gap-2.5">
+        <button onclick="state.flashIdx=Math.max(state.flashIdx-1,0);state.flashFlipped=false;render()"
+          class="flex-1 py-3.5 rounded-[14px] font-semibold" style="background:#374151;border:none;color:#fff;cursor:pointer">← Prev</button>
+        <button onclick="state.flashIdx=Math.min(state.flashIdx+1,${s.flashWords.length-1});state.flashFlipped=false;render()"
+          class="flex-1 py-3.5 rounded-[14px] font-semibold" style="background:#059669;border:none;color:#fff;cursor:pointer">Next →</button>
+      </div></div>`;
+    }
+  }
+
+  // ═══ TONE RULES ═══
+  else if (s.screen === 'tone') {
+    html += header('Tone Rules');
+    html += `<div class="p-4 pt-5"><h2 class="text-xl font-bold mb-4">🎵 5 Tone Sandhi Rules</h2>`;
+
+    s.toneRules.forEach((rule, i) => {
+      const rw = s.toneRuleWords.filter(w => w.rule_id === rule.id);
+      html += `<div class="rounded-[18px] p-4 border border-white/[0.08] mb-3 fade-up"
+        style="background:linear-gradient(145deg,#151a2d,#1b2240);animation-delay:${i*80}ms">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-lg flex-shrink-0" style="background:${RULE_COLORS[i]}">${rule.rule_number}</div>
+          <div><div class="font-semibold text-sm">${esc(rule.rule_name)}</div><div class="text-xs text-gray-400 mt-0.5">${esc(rule.description)}</div></div>
+        </div>
+        <div class="rounded-xl p-3 flex items-center gap-4 justify-center" style="background:rgba(0,0,0,0.3)">
+          <div class="text-center"><div class="text-[10px] text-gray-500 mb-1">Example</div><div class="text-2xl font-chinese">${esc(rule.example_hanzi)}</div></div>
+          <div class="text-center"><div class="text-[10px] text-gray-500 mb-1">Before</div><div class="text-base text-red-400 font-chinese">${esc(rule.example_before)}</div></div>
+          <span class="text-gray-500">→</span>
+          <div class="text-center"><div class="text-[10px] text-gray-500 mb-1">After</div><div class="text-base text-emerald-400 font-chinese">${esc(rule.example_after)}</div></div>
+        </div>`;
+      if (rw.length > 0) {
+        html += `<div class="text-[11px] text-gray-500 mt-2.5">${rw.length} words: <span class="text-gray-400 font-chinese">${rw.slice(0,10).map(w=>esc(w.hanzi)).join(', ')}${rw.length>10?'...':''}</span></div>`;
+      }
+      html += `</div>`;
+    });
+    html += `</div>`;
+  }
+
+  // ═══ PROGRESS ═══
+  else if (s.screen === 'progress') {
+    html += header('Progress');
+    const ratedCount = Object.keys(s.ratings).length;
+    const totalW = s.allWordMeta.length;
+
+    if (ratedCount === 0) {
+      html += `<div class="text-center py-12 px-4">
+        <div class="text-5xl mb-4">📊</div>
+        <div class="text-lg font-semibold mb-2">No ratings yet</div>
+        <div class="text-gray-400 text-sm">Rate words while studying to track progress</div>
+        <div class="text-gray-600 text-xs mt-3">Use ○ ✓ 💬 ✍ 🤔 ✗ buttons during study</div>
+      </div>`;
+    } else {
+      html += `<div class="p-4 pt-5">`;
+
+      // Stats
+      html += `<div class="grid grid-cols-3 gap-2.5 mb-5">`;
+      [{v:ratedCount,l:'Rated',c:'#ef4444'},{v:totalW-ratedCount,l:'Remaining',c:'#f59e0b'},{v:Math.round((ratedCount/totalW)*100)+'%',l:'Complete',c:'#10b981'}].forEach(x => {
+        html += `<div class="rounded-[14px] py-3.5 px-2 text-center border border-white/5" style="background:rgba(255,255,255,0.03)">
+          <div class="text-xl font-bold" style="color:${x.c}">${x.v}</div>
+          <div class="text-[11px] text-gray-500 mt-0.5">${x.l}</div></div>`;
+      });
+      html += `</div>`;
+
+      // Distribution
+      html += `<div class="rounded-[18px] p-5 border border-white/[0.08] mb-5" style="background:linear-gradient(145deg,#151a2d,#1b2240)">
+        <div class="text-sm text-gray-400 mb-3.5">Rating Distribution</div>`;
+      RATINGS.forEach(r => {
+        const cnt = Object.values(s.ratings).filter(v => v===r.v).length;
+        const pct = ratedCount>0?(cnt/ratedCount)*100:0;
+        html += `<div class="flex items-center gap-2.5 mb-2">
+          <span class="w-7 text-center text-sm">${r.icon}</span>
+          <div class="flex-1 h-2.5 bg-gray-800 rounded-lg overflow-hidden"><div class="h-full rounded-lg" style="width:${pct}%;background:${r.bg};transition:width 0.5s"></div></div>
+          <span class="text-sm text-gray-400 w-8 text-right">${cnt}</span>
+        </div>`;
+      });
+      html += `<div class="border-t border-white/5 pt-3 mt-3 text-sm text-gray-400">Total: <span class="text-white font-semibold">${ratedCount}</span> / ${totalW} words</div></div>`;
+
+      // Per source
+      html += `<div class="rounded-[18px] p-5 border border-white/[0.08]" style="background:linear-gradient(145deg,#151a2d,#1b2240)">
+        <div class="text-sm text-gray-400 mb-3.5">By Source</div>`;
+      s.sources.forEach(src => {
+        const srcIds = s.allWordMeta.filter(w=>w.source_id===src.id).map(w=>w.id);
+        const rated = srcIds.filter(id => s.ratings[id]!==undefined).length;
+        const pct = srcIds.length>0?(rated/srcIds.length)*100:0;
+        html += `<div class="mb-3"><div class="flex justify-between text-sm mb-1"><span>${esc(src.label)}</span><span class="text-gray-400">${rated}/${srcIds.length}</span></div>
+          <div class="h-2 bg-gray-800 rounded-lg overflow-hidden"><div class="h-full rounded-lg" style="width:${pct}%;background:#ef4444;transition:width 0.5s"></div></div></div>`;
+      });
+      html += `</div>`;
+
+      html += `<p class="text-gray-600 text-xs text-center mt-4">Ratings saved locally in your browser</p></div>`;
+    }
+  }
+
+  el.innerHTML = html;
+}
+
+// ═══ START ═══
+loadApp();
+  </script>
+</body>
+</html>
