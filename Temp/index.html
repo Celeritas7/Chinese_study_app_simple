@@ -295,39 +295,6 @@ function getToneNum(syl){
   return 5;
 }
 
-// Convert 3rd tone syllable to 2nd tone (for Rule 1 spoken form)
-function tone3to2(syl){
-  return syl.replace(/ǎ/g,'á').replace(/ě/g,'é').replace(/ǐ/g,'í').replace(/ǒ/g,'ó').replace(/ǔ/g,'ú').replace(/ǚ/g,'ǘ');
-}
-
-function syllableCompare(leftSyls,rightSyls,leftLabel,rightLabel){
-  var h='<div style="margin:10px 0">';
-  h+='<div style="display:flex;align-items:center;justify-content:center;gap:10px">';
-  // Left side
-  h+='<div style="text-align:center"><div style="font-size:9px;color:#6b7280;margin-bottom:4px">'+leftLabel+'</div>';
-  h+='<div style="display:flex;align-items:center;gap:3px;font-family:Noto Sans SC,sans-serif">';
-  for(var i=0;i<leftSyls.length;i++){
-    var changed=leftSyls[i]!==rightSyls[i];
-    h+='<span style="font-size:17px;padding:1px 4px;border-radius:4px;'
-      +(changed?'color:#f87171;text-decoration:line-through;text-decoration-thickness:2px':'color:#6b7280')
-      +'">'+esc(leftSyls[i])+'</span>';
-  }
-  h+='</div></div>';
-  h+='<span style="color:#4b5563;font-size:16px">\u2192</span>';
-  // Right side
-  h+='<div style="text-align:center"><div style="font-size:9px;color:#6b7280;margin-bottom:4px">'+rightLabel+'</div>';
-  h+='<div style="display:flex;align-items:center;gap:3px;font-family:Noto Sans SC,sans-serif">';
-  for(var i=0;i<rightSyls.length;i++){
-    var changed=leftSyls[i]!==rightSyls[i];
-    h+='<span style="font-size:17px;padding:1px 4px;border-radius:4px;'
-      +(changed?'color:#34d399;font-weight:600':'color:#6b7280')
-      +'">'+esc(rightSyls[i])+'</span>';
-  }
-  h+='</div></div>';
-  h+='</div></div>';
-  return h;
-}
-
 function toneRuleBadge(w){
   var info=getToneInfo(w);
   if(!info)return '';
@@ -337,6 +304,7 @@ function toneRuleBadge(w){
   var rname=r.rule_name||r.name;
   var rdesc=r.description||r.desc;
 
+  // Get original and modified pinyin
   var op=trw.original_pinyin||trw.op||w.op||'';
   var mp=trw.modified_pinyin||trw.mp||w.p||'';
 
@@ -344,11 +312,12 @@ function toneRuleBadge(w){
     +'<div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium" style="background:'+RULE_COLORS[rn-1]+';color:#fff">Rule '+rn+': '+esc(rname)+'</div>'
     +'<div class="text-[11px] text-gray-400 mt-1">'+esc(rdesc)+'</div>';
 
-  var origSyls=op?op.trim().split(/\s+/):[];
-  var modSyls=mp?mp.trim().split(/\s+/):[];
+  var origSyls=op.trim().split(/\s+/);
+  var modSyls=mp.trim().split(/\s+/);
 
-  // ═══ RULE 2: Half 3rd — Design D tone contour ═══
-  if(rn===2 && origSyls.length>=2){
+  // Rule 2: Half 3rd — Design D tone contour
+  if(rn===2 && op && origSyls.length>=2){
+    // Find the half-3rd syllable (3rd tone before non-3rd)
     var halfIdx=-1;
     for(var i=0;i<origSyls.length-1;i++){
       if(getToneNum(origSyls[i])===3 && getToneNum(origSyls[i+1])!==3){halfIdx=i;break}
@@ -356,12 +325,14 @@ function toneRuleBadge(w){
     if(halfIdx>=0){
       var syl=esc(origSyls[halfIdx]);
       h+='<div style="display:flex;align-items:center;justify-content:center;gap:12px;margin:10px 0">';
+      // Full 3rd
       h+='<div style="text-align:center;padding:6px 12px;border-radius:10px;background:rgba(248,113,113,0.1);border:1px solid rgba(248,113,113,0.2)">'
         +'<svg width="36" height="24" viewBox="0 0 36 24"><path d="M 3 5 Q 9 21, 18 21 Q 27 21, 33 5" fill="none" stroke="#f87171" stroke-width="2" stroke-linecap="round"/></svg>'
         +'<div style="font-size:13px;color:#f87171;font-family:Noto Sans SC,sans-serif">'+syl+'</div>'
         +'<div style="font-size:9px;color:#6b7280">Full 3rd \u02C7</div>'
         +'</div>';
       h+='<span style="color:#4b5563;font-size:16px">\u2192</span>';
+      // Half 3rd
       h+='<div style="text-align:center;padding:6px 12px;border-radius:10px;background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.2)">'
         +'<svg width="36" height="24" viewBox="0 0 36 24"><path d="M 3 5 Q 9 21, 18 21" fill="none" stroke="#fbbf24" stroke-width="2.5" stroke-linecap="round"/><path d="M 18 21 Q 27 21, 33 5" fill="none" stroke="#fbbf24" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="2,3" opacity="0.25"/></svg>'
         +'<div style="font-size:13px;color:#fbbf24;font-family:Noto Sans SC,sans-serif">'+syl+'</div>'
@@ -370,24 +341,31 @@ function toneRuleBadge(w){
       h+='</div>';
     }
   }
-  // ═══ RULE 1: 3rd+3rd — Written → Spoken (auto-compute) ═══
-  else if(rn===1 && origSyls.length>=2){
-    // Written form = original (nǐ hǎo)
-    // Spoken form = first 3rd tone becomes 2nd (ní hǎo)
-    var writtenSyls=origSyls.slice();
-    var spokenSyls=origSyls.slice();
-    for(var i=0;i<spokenSyls.length-1;i++){
-      if(getToneNum(spokenSyls[i])===3 && getToneNum(spokenSyls[i+1])===3){
-        spokenSyls[i]=tone3to2(spokenSyls[i]);
-      }
+  // Rules 1, 3, 4, 5: Syllable-level comparison
+  else if(op && mp && op.replace(/ /g,'')!==mp.replace(/ /g,'') && origSyls.length===modSyls.length){
+    h+='<div style="display:flex;align-items:center;justify-content:center;gap:8px;margin:10px 0">';
+    // Original with strikethrough on changed
+    h+='<div style="display:flex;align-items:center;gap:3px;font-family:Noto Sans SC,sans-serif">';
+    for(var i=0;i<origSyls.length;i++){
+      var changed=origSyls[i]!==modSyls[i];
+      h+='<span style="font-size:17px;padding:1px 3px;border-radius:4px;'
+        +(changed?'color:#f87171;text-decoration:line-through;text-decoration-thickness:2px':'color:#6b7280')
+        +'">'+esc(origSyls[i])+'</span>';
     }
-    h+=syllableCompare(writtenSyls,spokenSyls,'Written','Say this');
+    h+='</div>';
+    h+='<span style="color:#4b5563;font-size:16px">\u2192</span>';
+    // Modified with highlight on changed
+    h+='<div style="display:flex;align-items:center;gap:3px;font-family:Noto Sans SC,sans-serif">';
+    for(var i=0;i<modSyls.length;i++){
+      var changed=origSyls[i]!==modSyls[i];
+      h+='<span style="font-size:17px;padding:1px 3px;border-radius:4px;'
+        +(changed?'color:#34d399;font-weight:600':'color:#6b7280')
+        +'">'+esc(modSyls[i])+'</span>';
+    }
+    h+='</div>';
+    h+='</div>';
   }
-  // ═══ RULES 3, 4, 5: Each char → Standard ═══
-  else if((rn===3||rn===4||rn===5) && origSyls.length>=2 && modSyls.length>=2 && origSyls.length===modSyls.length){
-    h+=syllableCompare(origSyls,modSyls,'Each character','Standard');
-  }
-  // Fallback: simple display
+  // Fallback: simple before→after
   else if(op && mp && op.replace(/ /g,'')!==mp.replace(/ /g,'')){
     h+='<div style="display:flex;align-items:center;justify-content:center;gap:8px;margin:8px 0;font-size:15px">'
       +'<span style="color:#f87171;text-decoration:line-through;font-family:Noto Sans SC,sans-serif">'+esc(op)+'</span>'
