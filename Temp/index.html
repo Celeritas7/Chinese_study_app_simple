@@ -10,8 +10,7 @@
   <script>tailwind.config={theme:{extend:{fontFamily:{chinese:['"Noto Sans SC"','system-ui','sans-serif']}}}}</script>
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:system-ui,-apple-system,sans-serif;background:#0c1021;color:#f1f1f4;min-height:100vh}
-    button{-webkit-user-select:none;user-select:none}
+    body{font-family:system-ui,-apple-system,sans-serif;background:#0c1021;color:#f1f1f4;min-height:100vh;-webkit-user-select:none;user-select:none}
     ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:#333;border-radius:4px}
     @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
     .fade-up{animation:fadeUp 0.35s ease-out forwards;opacity:0}
@@ -183,7 +182,7 @@ async function initApp(){
     var timeout=new Promise(function(_,rej){setTimeout(function(){rej(new Error('Timeout'))},8000)});
     var fetches=Promise.all([
       sbClient.from('chinese_study_app_sources').select('*').order('display_order'),
-      sbClient.from('chinese_study_app_words').select('id,source_id,hanzi,pinyin,meaning,marathi,sentence,hint,supporting_word_1,supporting_word_2,has_tone_rule,original_pinyin,display_order').order('display_order'),
+      sbClient.from('chinese_study_app_words').select('id,source_id,hanzi,pinyin,meaning,marathi,sentence,hint,supporting_word_1,supporting_word_2,has_tone_rule,display_order').order('display_order'),
       sbClient.from('chinese_study_app_tone_rules').select('*').order('rule_number'),
       sbClient.from('chinese_study_app_tone_rule_words').select('*').order('rule_id'),
     ]);
@@ -194,7 +193,7 @@ async function initApp(){
     dataSource='supabase';
     S.sources=res[0].data;
     S.allWords=res[1].data.map(function(w){return{
-      id:w.id,sid:w.source_id,h:w.hanzi,p:w.pinyin,op:w.original_pinyin||'',
+      id:w.id,sid:w.source_id,h:w.hanzi,p:w.pinyin,
       m:w.meaning||'',mr:w.marathi||'',s:w.sentence||'',
       hi:w.hint||'',s1:w.supporting_word_1||'',s2:w.supporting_word_2||'',
       t:w.has_tone_rule?1:0}});
@@ -280,7 +279,7 @@ function getToneInfo(w){
     if((tw.hanzi||tw.h)===w.h){
       var rid=tw.rule_id||tw.rid;
       var rule=S.toneRules.find(function(r){return(r.id||r.n)===rid});
-      if(rule)matches.push({rule:rule,trw:tw});
+      if(rule)matches.push(rule);
     }
   });
   return matches.length?matches:null;
@@ -289,24 +288,14 @@ function getToneInfo(w){
 function toneRuleBadge(w){
   var info=getToneInfo(w);
   if(!info)return '';
-  var r=info[0].rule;
+  var r=info[0];
   var rn=r.rule_number||r.n;
   var rname=r.rule_name||r.name;
   var rdesc=r.description||r.desc;
-  var h='<div class="mb-2">'
+  return '<div class="mb-2">'
     +'<div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium" style="background:'+RULE_COLORS[rn-1]+';color:#fff">Rule '+rn+': '+esc(rname)+'</div>'
-    +'<div class="text-[11px] text-gray-400 mt-1">'+esc(rdesc)+'</div>';
-  // Show original → actual pinyin from word's original_pinyin column
-  var op=w.op||'';
-  if(op&&op!==w.p){
-    h+='<div class="flex items-center justify-center gap-2 mt-1.5 text-sm">'
-      +'<span class="text-red-400 line-through font-chinese">'+esc(op)+'</span>'
-      +'<span class="text-gray-500">\u2192</span>'
-      +'<span class="text-emerald-400 font-chinese">'+esc(w.p)+'</span>'
-      +'</div>';
-  }
-  h+='</div>';
-  return h;
+    +'<div class="text-[11px] text-gray-400 mt-1">'+esc(rdesc)+'</div>'
+    +'</div>';
 }
 
 // ═══ HELPERS ═══
