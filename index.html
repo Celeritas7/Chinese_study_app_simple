@@ -5,30 +5,101 @@
   <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
   <title>汉语学习 - Chinese Study App</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>汉</text></svg>">
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;900&display=swap" rel="stylesheet">
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>tailwind.config={theme:{extend:{fontFamily:{chinese:['"Noto Sans SC"','system-ui','sans-serif']}}}}</script>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700;900&family=Crimson+Pro:ital,wght@0,300;0,500;0,700;1,400&family=Noto+Sans+SC:wght@400;700;900&display=swap" rel="stylesheet">
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:system-ui,-apple-system,sans-serif;background:#0c1021;color:#f1f1f4;min-height:100vh}
-    button{-webkit-user-select:none;user-select:none}
-    ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:#333;border-radius:4px}
-    @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
-    .fade-up{animation:fadeUp 0.35s ease-out forwards;opacity:0}
-    .card-hover{transition:all 0.25s ease}
-    .card-hover:hover{transform:translateY(-2px);border-color:rgba(239,68,68,0.35);box-shadow:0 8px 24px rgba(0,0,0,0.3)}
-    .perspective{perspective:1000px}.preserve-3d{transform-style:preserve-3d;transition:transform 0.5s}
-    .backface-hidden{backface-visibility:hidden}.rotate-y-180{transform:rotateY(180deg)}
+    :root{
+      --bg:#f7f3ed;--bg2:#efe9df;--card:#fffdf8;
+      --ink:#1a1410;--ink2:#4a3f32;--ink3:#8a7e6e;--ink4:#b8ad9e;
+      --red:#c23b22;--red-soft:rgba(194,59,34,0.08);
+      --green:#3a7d44;--green-soft:rgba(58,125,68,0.08);
+      --gold:#b8860b;--gold-soft:rgba(184,134,11,0.08);
+      --blue:#2c5f8a;--blue-soft:rgba(44,95,138,0.08);
+      --purple:#7c3aed;--purple-soft:rgba(124,58,237,0.08);
+      --shadow:0 1px 3px rgba(26,20,16,0.06);
+      --shadow2:0 4px 16px rgba(26,20,16,0.08);
+    }
+    body{font-family:'Crimson Pro',Georgia,serif;background:var(--bg);color:var(--ink);min-height:100vh;position:relative}
+    body::before{content:'';position:fixed;top:0;left:0;right:0;bottom:0;background:url("data:image/svg+xml,%3Csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");pointer-events:none;z-index:0}
+    #app{max-width:480px;margin:0 auto;min-height:100vh;padding-bottom:20px;position:relative;z-index:1}
+    button{-webkit-user-select:none;user-select:none;font-family:'Crimson Pro',Georgia,serif}
+    .font-cn{font-family:'Noto Serif SC','Noto Sans SC',serif}
+    ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--ink4);border-radius:4px}
+
+    @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+    .fade-up{animation:fadeUp 0.3s ease-out forwards;opacity:0}
     .rating-btn{transition:all 0.2s ease}.rating-btn:hover{transform:scale(1.1)!important}
     .progress-fill{transition:width 0.4s ease}
-    .draw-canvas{border:2px solid rgba(255,255,255,0.12);border-radius:16px;background:rgba(255,255,255,0.04);cursor:crosshair;touch-action:none;display:block}
-    .draw-canvas.active{border-color:rgba(239,68,68,0.4)}
+
+    /* Canvas */
+    .draw-canvas{border:2px solid var(--ink4);border-radius:14px;background:rgba(26,20,16,0.03);cursor:crosshair;touch-action:none;display:block}
+    .draw-canvas.active{border-color:var(--red)}
+
+    /* Tabs */
+    .htabs{display:flex;background:var(--card);border-bottom:1px solid rgba(26,20,16,0.08);padding:0 4px}
+    .htab{flex:1;text-align:center;padding:12px 0 8px;font-size:11px;color:var(--ink3);cursor:pointer;border:none;background:none;border-bottom:2px solid transparent;letter-spacing:0.3px;font-weight:500;transition:all 0.2s}
+    .htab.on{color:var(--red);border-bottom-color:var(--red);font-weight:700}
+    .htab-icon{display:block;font-size:18px;margin-bottom:1px}
+
+    /* Source cards */
+    .src-card{display:flex;align-items:center;gap:14px;padding:14px 16px;background:var(--card);border-radius:14px;margin-bottom:8px;box-shadow:var(--shadow);cursor:pointer;transition:all 0.15s;border:1px solid rgba(26,20,16,0.04)}
+    .src-card:hover{box-shadow:var(--shadow2);transform:translateY(-1px)}
+    .src-icon{width:46px;height:46px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:900;flex-shrink:0;color:#fff}
+
+    /* Study card */
+    .scard{margin:12px 0;padding:28px 20px 20px;background:var(--card);border-radius:18px;text-align:center;box-shadow:var(--shadow2);border:1px solid rgba(26,20,16,0.04);cursor:pointer;position:relative;overflow:hidden;min-height:240px}
+    .scard::before{content:'';position:absolute;top:0;left:0;right:0;bottom:0;background:url("data:image/svg+xml,%3Csvg width='60' height='60' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='1.2' numOctaves='3'/%3E%3C/filter%3E%3Crect width='60' height='60' filter='url(%23n)' opacity='0.015'/%3E%3C/svg%3E");pointer-events:none}
+    .hanzi-big{font-size:72px;font-weight:900;line-height:1;margin-bottom:12px;color:var(--ink);position:relative}
+
+    /* Reveal items */
+    .rv{margin-top:10px;padding:8px 14px;border-radius:10px;background:var(--bg);font-size:14px;color:var(--ink2);animation:fadeUp 0.3s ease;text-align:left}
+    .rv-s{border-left:3px solid var(--gold)}
+    .rv-h{border-left:3px solid var(--purple);color:#6d28d9;font-size:13px}
+    .rv-j{border-left:3px solid var(--blue)}
+    .rv-ans{margin-top:14px;padding-top:14px;border-top:1px solid rgba(26,20,16,0.08);text-align:center}
+
+    /* Sentence context */
+    .sentence-ctx{font-size:15px;line-height:1.7}
+    .sentence-ctx .s-blank{display:inline;border-bottom:2px dashed var(--red);padding:0 2px;min-width:30px;color:transparent}
+    .sentence-ctx .s-word{color:var(--red);font-weight:700}
+
+    /* Dots */
+    .dots{display:flex;gap:5px;justify-content:center;margin:10px 0 4px}
+    .dot{width:8px;height:8px;border-radius:50%;background:var(--ink4);opacity:0.25;transition:all 0.3s}
+    .dot-on{opacity:1;background:var(--green)}
+    .dot-ans{width:14px;border-radius:4px}
+    .dot-ans-on{opacity:1;background:var(--red)}
+
+    /* Buttons */
+    .btn-reveal{margin-top:10px;padding:10px 28px;border-radius:12px;font-size:14px;font-weight:600;border:none;cursor:pointer;background:var(--ink);color:var(--bg);transition:all 0.15s}
+    .btn-reveal:hover{transform:scale(1.02)}
+    .btn-prev{background:var(--bg2);color:var(--ink2);border:none;cursor:pointer;font-weight:600;font-size:15px;padding:14px;border-radius:14px;flex:1;transition:all 0.15s}
+    .btn-next{background:var(--red);color:#fff;border:none;cursor:pointer;font-weight:600;font-size:15px;padding:14px;border-radius:14px;flex:1;transition:all 0.15s}
+
+    /* Mode tabs */
+    .mtabs{display:flex;gap:4px;background:var(--bg2);border-radius:12px;padding:3px;margin-bottom:12px}
+    .mtab{flex:1;text-align:center;padding:8px 0;border-radius:10px;font-size:12px;color:var(--ink3);cursor:pointer;border:none;background:transparent;transition:all 0.2s}
+    .mtab.on{background:var(--card);color:var(--ink);box-shadow:0 1px 4px rgba(0,0,0,0.06);font-weight:700}
+
+    /* Quiz options */
+    .qopt{border-radius:14px;padding:14px 16px;text-align:left;border:2px solid rgba(26,20,16,0.08);background:var(--card);color:var(--ink);cursor:pointer;font-size:15px;transition:all 0.2s;margin-bottom:8px;width:100%;font-family:'Crimson Pro',Georgia,serif}
+    .qopt:hover{background:var(--bg2)}
+
+    /* Category pills */
+    .cpill{padding:6px 16px;border-radius:20px;font-size:13px;cursor:pointer;border:1px solid var(--ink4);color:var(--ink3);background:transparent;transition:all 0.2s}
+    .cpill.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+
+    /* Tone badge */
+    .tone-badge{display:inline-block;font-size:10px;padding:3px 10px;border-radius:8px;background:var(--gold-soft);color:var(--gold);font-weight:600;margin-bottom:10px}
+
+    /* Today chips */
+    .tchip{padding:3px 8px;border-radius:6px;font-size:13px;background:var(--bg2);color:var(--ink2)}
   </style>
 </head>
 <body>
-<div id="app" class="max-w-[480px] mx-auto min-h-screen pb-5">
-  <div class="flex items-center justify-center min-h-screen">
-    <div class="text-center"><div class="text-5xl mb-4 font-chinese">汉语</div><div class="text-gray-400" id="loadMsg">Connecting...</div></div>
+<div id="app">
+  <div style="display:flex;align-items:center;justify-content:center;min-height:100vh">
+    <div style="text-align:center"><div class="font-cn" style="font-size:48px;margin-bottom:12px">汉语</div><div style="color:var(--ink3)" id="loadMsg">Connecting...</div></div>
   </div>
 </div>
 
@@ -412,23 +483,23 @@ function syllableCompare(leftSyls,rightSyls,leftLabel,rightLabel){
   var h='<div style="margin:10px 0">';
   h+='<div style="display:flex;align-items:center;justify-content:center;gap:10px">';
   // Left side
-  h+='<div style="text-align:center"><div style="font-size:9px;color:#6b7280;margin-bottom:4px">'+leftLabel+'</div>';
+  h+='<div style="text-align:center"><div style="font-size:9px;color:var(--ink3);margin-bottom:4px">'+leftLabel+'</div>';
   h+='<div style="display:flex;align-items:center;gap:3px;font-family:Noto Sans SC,sans-serif">';
   for(var i=0;i<leftSyls.length;i++){
     var changed=leftSyls[i]!==rightSyls[i];
     h+='<span style="font-size:17px;padding:1px 4px;border-radius:4px;'
-      +(changed?'color:#f87171;text-decoration:line-through;text-decoration-thickness:2px':'color:#6b7280')
+      +(changed?'color:#f87171;text-decoration:line-through;text-decoration-thickness:2px':'color:var(--ink3)')
       +'">'+esc(leftSyls[i])+'</span>';
   }
   h+='</div></div>';
-  h+='<span style="color:#4b5563;font-size:16px">\u2192</span>';
+  h+='<span style="color:var(--ink3);font-size:16px">\u2192</span>';
   // Right side
-  h+='<div style="text-align:center"><div style="font-size:9px;color:#6b7280;margin-bottom:4px">'+rightLabel+'</div>';
+  h+='<div style="text-align:center"><div style="font-size:9px;color:var(--ink3);margin-bottom:4px">'+rightLabel+'</div>';
   h+='<div style="display:flex;align-items:center;gap:3px;font-family:Noto Sans SC,sans-serif">';
   for(var i=0;i<rightSyls.length;i++){
     var changed=leftSyls[i]!==rightSyls[i];
     h+='<span style="font-size:17px;padding:1px 4px;border-radius:4px;'
-      +(changed?'color:#34d399;font-weight:600':'color:#6b7280')
+      +(changed?'color:#34d399;font-weight:600':'color:var(--ink3)')
       +'">'+esc(rightSyls[i])+'</span>';
   }
   h+='</div></div>';
@@ -448,9 +519,9 @@ function toneRuleBadge(w){
   var op=trw.original_pinyin||trw.op||w.op||'';
   var mp=trw.modified_pinyin||trw.mp||w.p||'';
 
-  var h='<div class="mb-3">'
-    +'<div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium" style="background:'+RULE_COLORS[rn-1]+';color:#fff">Rule '+rn+': '+esc(rname)+'</div>'
-    +'<div class="text-[11px] text-gray-400 mt-1">'+esc(rdesc)+'</div>';
+  var h='<div style="margin-bottom:10px">'
+    +'<div style="display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:8px;font-size:12px;font-weight:600;background:'+RULE_COLORS[rn-1]+';color:#fff">Rule '+rn+': '+esc(rname)+'</div>'
+    +'<div style="font-size:11px;color:var(--ink3);margin-top:4px">'+esc(rdesc)+'</div>';
 
   var origSyls=op?op.trim().split(/\s+/):[];
   var modSyls=mp?mp.trim().split(/\s+/):[];
@@ -467,13 +538,13 @@ function toneRuleBadge(w){
       h+='<div style="text-align:center;padding:6px 12px;border-radius:10px;background:rgba(248,113,113,0.1);border:1px solid rgba(248,113,113,0.2)">'
         +'<svg width="36" height="24" viewBox="0 0 36 24"><path d="M 3 5 Q 9 21, 18 21 Q 27 21, 33 5" fill="none" stroke="#f87171" stroke-width="2" stroke-linecap="round"/></svg>'
         +'<div style="font-size:13px;color:#f87171;font-family:Noto Sans SC,sans-serif">'+syl+'</div>'
-        +'<div style="font-size:9px;color:#6b7280">Full 3rd \u02C7</div>'
+        +'<div style="font-size:9px;color:var(--ink3)">Full 3rd \u02C7</div>'
         +'</div>';
-      h+='<span style="color:#4b5563;font-size:16px">\u2192</span>';
+      h+='<span style="color:var(--ink3);font-size:16px">\u2192</span>';
       h+='<div style="text-align:center;padding:6px 12px;border-radius:10px;background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.2)">'
         +'<svg width="36" height="24" viewBox="0 0 36 24"><path d="M 3 5 Q 9 21, 18 21" fill="none" stroke="#fbbf24" stroke-width="2.5" stroke-linecap="round"/><path d="M 18 21 Q 27 21, 33 5" fill="none" stroke="#fbbf24" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="2,3" opacity="0.25"/></svg>'
         +'<div style="font-size:13px;color:#fbbf24;font-family:Noto Sans SC,sans-serif">'+syl+'</div>'
-        +'<div style="font-size:9px;color:#6b7280">Half 3rd \u2198</div>'
+        +'<div style="font-size:9px;color:var(--ink3)">Half 3rd \u2198</div>'
         +'</div>';
       h+='</div>';
     }
@@ -499,7 +570,7 @@ function toneRuleBadge(w){
   else if(op && mp && op.replace(/ /g,'')!==mp.replace(/ /g,'')){
     h+='<div style="display:flex;align-items:center;justify-content:center;gap:8px;margin:8px 0;font-size:15px">'
       +'<span style="color:#f87171;text-decoration:line-through;font-family:Noto Sans SC,sans-serif">'+esc(op)+'</span>'
-      +'<span style="color:#4b5563">\u2192</span>'
+      +'<span style="color:var(--ink3)">\u2192</span>'
       +'<span style="color:#34d399;font-family:Noto Sans SC,sans-serif">'+esc(mp)+'</span>'
       +'</div>';
   }
@@ -528,20 +599,20 @@ function getJapaneseHint(w){
     if(b)matches.push({ch:ch,jp:b.jp,g:b.g,notes:b.notes});
   });
   if(!matches.length)return '';
-  var h='<div style="margin-top:10px;padding:8px 12px;border-radius:12px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06)">';
-  h+='<div style="font-size:10px;color:#6b7280;margin-bottom:6px">\uD83C\uDDEF\uD83C\uDDF5 Japanese Connection</div>';
+  var h='<div style="margin-top:10px;padding:8px 12px;border-radius:12px;background:var(--blue-soft);border:1px solid rgba(44,95,138,0.12)">';
+  h+='<div style="font-size:10px;color:var(--ink3);margin-bottom:6px">\uD83C\uDDEF\uD83C\uDDF5 Japanese Connection</div>';
   h+='<div style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center">';
   matches.forEach(function(m){
     var st=jpGroupStyle(m.g);
     h+='<div style="text-align:center;padding:5px 10px;border-radius:8px;background:'+st.bg+';border:1px solid '+st.b+'">';
     h+='<div style="font-size:16px;font-family:Noto Sans SC,sans-serif">'+esc(m.ch)+'</div>';
     if(m.jp)h+='<div style="font-size:12px;color:'+st.c+';font-family:Noto Sans SC,sans-serif;font-weight:600">'+esc(m.jp)+'</div>';
-    h+='<div style="font-size:8px;color:#6b7280">'+st.icon+' '+st.l+'</div>';
+    h+='<div style="font-size:8px;color:var(--ink3)">'+st.icon+' '+st.l+'</div>';
     h+='</div>';
   });
   h+='</div>';
   var noted=matches.find(function(m){return m.notes&&m.notes.length>3});
-  if(noted)h+='<div style="font-size:10px;color:#9ca3af;margin-top:5px;text-align:center">'+esc(noted.notes.length>80?noted.notes.slice(0,80)+'...':noted.notes)+'</div>';
+  if(noted)h+='<div style="font-size:10px;color:var(--ink4);margin-top:5px;text-align:center">'+esc(noted.notes.length>80?noted.notes.slice(0,80)+'...':noted.notes)+'</div>';
   h+='</div>';
   return h;
 }
@@ -578,12 +649,12 @@ function revealNextLabel(w,revLevel){
 }
 function revealDots(w,revLevel){
   var steps=getSteps(w);
-  var h='<div style="display:flex;gap:4px;justify-content:center;margin:6px 0">';
+  var h='<div class="dots">';
   steps.forEach(function(s,i){
     var filled=i<revLevel;
     var isAnswer=s==='answer';
-    var col=filled?(isAnswer?'#ef4444':'#34d399'):(isAnswer?'rgba(239,68,68,0.3)':'rgba(255,255,255,0.15)');
-    h+='<div style="width:'+(isAnswer?'16px':'8px')+';height:8px;border-radius:4px;background:'+col+';transition:all 0.3s"></div>';
+    var cls='dot'+(isAnswer?' dot-ans':'')+(filled?(isAnswer?' dot-ans-on':' dot-on'):'');
+    h+='<div class="'+cls+'"></div>';
   });
   h+='</div>';
   return h;
@@ -591,40 +662,55 @@ function revealDots(w,revLevel){
 function revealBtn(onclick,w,revLevel){
   var label=revealNextLabel(w,revLevel);
   if(!label)return '';
-  return '<button onclick="event.stopPropagation();'+onclick+'" class="mt-3 px-6 py-2.5 rounded-xl text-sm font-medium" style="background:linear-gradient(135deg,#ef4444,#dc2626);border:none;color:#fff;cursor:pointer;transition:all 0.2s">'+label+'</button>';
+  return '<button onclick="event.stopPropagation();'+onclick+'" class="btn-reveal" style="margin-top:12px">'+label+'</button>';
 }
 function advStudy(){var f=getF(),w=f[S.si];if(w){S.sRev=Math.min(S.sRev+1,getSteps(w).length)};render()}
 function advFlash(){var w=S.fw[S.fi];if(w){S.ff=Math.min(S.ff+1,getSteps(w).length)};render()}
 
+
+// ═══ THEMED HELPERS ═══
 function rateBtns(wid,sz){
-  sz=sz||42;var cr=S.ratings[wid]===undefined?-1:S.ratings[wid];
+  sz=sz||40;var cr=S.ratings[wid]===undefined?-1:S.ratings[wid];
+  var RATE_BG=['#fee2e2','#fef3c7','#dbeafe','#d1fae5','#ecfdf5','#f0fdf4'];
   return RATINGS.map(function(r){var a=cr===r.v;
-    return '<button onclick="event.stopPropagation();rate('+wid+','+r.v+')" title="'+esc(r.nm)+'" class="rating-btn rounded-full flex items-center justify-center" style="width:'+sz+'px;height:'+sz+'px;border:'+(a?'2px solid #fff':'2px solid transparent')+';background:'+r.bg+';color:#fff;font-size:'+(sz>38?16:13)+'px;opacity:'+(a?1:0.5)+';transform:'+(a?'scale(1.15)':'scale(1)')+';cursor:pointer">'+r.icon+'</button>'
+    return '<button onclick="event.stopPropagation();rate('+wid+','+r.v+')" title="'+esc(r.nm)+'" class="rating-btn" style="width:'+sz+'px;height:'+sz+'px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;border:'+(a?'2px solid var(--ink)':'2px solid transparent')+';background:'+(RATE_BG[r.v]||'var(--bg2)')+';font-size:'+(sz>38?16:13)+'px;opacity:'+(a?1:0.45)+';transform:'+(a?'scale(1.15)':'scale(1)')+';cursor:pointer">'+r.icon+'</button>'
   }).join('');
 }
 
-function progBar(c,t,c1,c2){c1=c1||'#ef4444';c2=c2||'#f59e0b';var p=t>0?(c/t)*100:0;
-  return '<div class="h-[5px] bg-gray-800 rounded-full overflow-hidden mb-4"><div class="h-full rounded-full progress-fill" style="width:'+p+'%;background:linear-gradient(90deg,'+c1+','+c2+')"></div></div>'}
+function progBar(c,t,c1,c2){c1=c1||'var(--red)';c2=c2||'var(--gold)';var p=t>0?(c/t)*100:0;
+  return '<div style="height:3px;background:var(--bg2);border-radius:2px;overflow:hidden;margin-bottom:14px"><div class="progress-fill" style="height:100%;border-radius:2px;width:'+p+'%;background:linear-gradient(90deg,'+c1+','+c2+')"></div></div>'}
 
 function hdr(title,right){
-  return '<div class="sticky top-0 z-40 border-b border-white/5 px-4 h-[52px] flex items-center gap-3" style="background:rgba(12,16,33,0.92);backdrop-filter:blur(16px)"><button onclick="back()" class="text-gray-400 hover:text-white text-xl p-1" style="background:none;border:none;cursor:pointer">\u2190</button><span class="font-semibold text-base flex-1">'+title+'</span>'+(right||'')+'</div>'}
+  return '<div style="position:sticky;top:0;z-index:40;display:flex;align-items:center;gap:12px;padding:12px 20px;background:var(--card);border-bottom:1px solid rgba(26,20,16,0.08)"><button onclick="back()" style="font-size:20px;color:var(--ink3);cursor:pointer;background:none;border:none">\u2190</button><span style="flex:1;font-size:15px;font-weight:700;color:var(--ink)">'+title+'</span>'+(right||'')+'</div>'}
 
 function testModeTabs(){
-  var h='<div class="flex gap-1 bg-gray-900/50 rounded-2xl p-1 mb-3">';
+  var h='<div class="mtabs">';
   TEST_MODES.forEach(function(m){
     var a=m.k===S.testMode;
-    h+='<button onclick="S.testMode=\''+m.k+'\';S.sRev=0;S.ff=0;canvasData=null;render()" class="flex-1 py-2 rounded-xl text-center" style="background:'+(a?'#ef4444':'transparent')+';border:none;color:'+(a?'#fff':'#6b7280')+';cursor:pointer;transition:all 0.2s"><div class="text-sm font-bold">'+m.icon+'</div><div class="text-[10px]" style="opacity:0.8">'+m.desc+'</div></button>';
+    h+='<button onclick="S.testMode=\''+m.k+'\';S.sRev=0;S.ff=0;canvasData=null;render()" class="mtab'+(a?' on':'')+'" style="font-family:\'Crimson Pro\',serif"><span style="font-weight:700">'+m.icon+'</span> <span style="font-size:11px;opacity:0.7">'+m.desc+'</span></button>';
   });
   return h+'</div>';
 }
 
 function canvasHTML(height){
   height=height||200;
-  return '<div class="relative" style="margin:0 auto">'
-    +'<canvas id="drawCanvas" class="draw-canvas w-full" style="height:'+height+'px"></canvas>'
-    +'<div class="absolute top-2 right-2"><button onclick="event.stopPropagation();clearCanvas()" class="px-3 py-1 rounded-lg text-xs font-medium flex items-center gap-1" style="background:rgba(255,255,255,0.08);border:none;color:#9ca3af;cursor:pointer">\uD83D\uDDD1 Clear</button></div>'
-    +'<div class="absolute bottom-2 left-3 text-xs text-gray-600">\u270D\uFE0F Draw hanzi here</div>'
+  return '<div style="position:relative;margin:0 auto">'
+    +'<canvas id="drawCanvas" class="draw-canvas" style="width:100%;height:'+height+'px"></canvas>'
+    +'<div style="position:absolute;top:8px;right:8px"><button onclick="event.stopPropagation();clearCanvas()" style="padding:4px 12px;border-radius:8px;font-size:11px;background:var(--bg2);border:none;color:var(--ink3);cursor:pointer">\uD83D\uDDD1 Clear</button></div>'
+    +'<div style="position:absolute;bottom:8px;left:12px;font-size:12px;color:var(--ink4)">\u270D\uFE0F Draw hanzi here</div>'
     +'</div>';
+}
+
+// Sentence context: highlight target word or show blank
+function sentenceCtx(w,showWord){
+  if(!w.s)return '';
+  var s=w.s,h=w.h;
+  var idx=s.indexOf(h);
+  if(idx<0) return '<div class="rv rv-s sentence-ctx font-cn">\uD83D\uDCAC '+esc(s)+'</div>';
+  var before=s.slice(0,idx);
+  var after=s.slice(idx+h.length);
+  var mid=showWord?'<span class="s-word">'+esc(h)+'</span>':'<span class="s-blank">'+esc(h)+'</span>';
+  return '<div class="rv rv-s sentence-ctx font-cn">\uD83D\uDCAC '+esc(before)+mid+esc(after)+'</div>';
 }
 
 // ═══ KEYBOARD ═══
@@ -644,13 +730,13 @@ document.addEventListener('keydown',function(e){
 });
 
 // ═══════════════════════════════════════════════════════════
-// RENDER
+// RENDER — Ink & Paper Theme
 // ═══════════════════════════════════════════════════════════
 function render(){
 var el=document.getElementById('app');var h='';
 
 if(S.screen==='loading'){
-  el.innerHTML='<div class="flex items-center justify-center min-h-screen"><div class="text-center"><div class="text-5xl mb-4 font-chinese">\u6C49\u8BED</div><div class="text-gray-400">Connecting...</div></div></div>';
+  el.innerHTML='<div style="display:flex;align-items:center;justify-content:center;min-height:100vh"><div style="text-align:center"><div class="font-cn" style="font-size:48px;margin-bottom:12px">汉语</div><div style="color:var(--ink3)">Connecting...</div></div></div>';
   return;
 }
 
@@ -659,179 +745,163 @@ if(S.screen==='home'){
   var catSrc=S.sources.filter(function(x){return x.category===S.activeCat});
   var catCnt=catSrc.reduce(function(a,x){return a+(S.wordCounts[x.id]||0)},0);
 
-  // ── Mode tabs: Study | Quiz | Flash | Tones  +  Settings gear ──
-  h+='<div class="border-b border-white/[0.06]" style="background:#151a2d"><div class="flex pt-3">';
+  // Mode tabs
+  h+='<div class="htabs">';
   [{k:'study',i:'\uD83D\uDCD6',l:'Study'},{k:'quiz',i:'\uD83E\uDDE0',l:'Quiz'},{k:'flash',i:'\uD83C\uDCCF',l:'Flash'},{k:'tone',i:'\uD83C\uDFB5',l:'Tones'}].forEach(function(m){
     var a=m.k===S.activeMode;
-    var bb=a&&m.k!=='tone'?'border-bottom:3px solid #ef4444':'border-bottom:3px solid transparent';
     if(m.k==='tone'){
-      h+='<button onclick="nav(\'tone\')" class="flex-1 flex flex-col items-center gap-1 pb-3 pt-2.5" style="background:none;border:none;cursor:pointer;color:'+(a?'#fff':'#6b7280')+';'+bb+'"><span class="text-2xl" style="filter:'+(a?'none':'grayscale(60%) brightness(0.7)')+'">'+m.i+'</span><span class="text-xs" style="font-weight:'+(a?700:500)+'">'+m.l+'</span></button>';
+      h+='<button onclick="nav(\'tone\')" class="htab'+(a?' on':'')+'"><span class="htab-icon">'+m.i+'</span>'+m.l+'</button>';
     }else{
-      h+='<button onclick="S.activeMode=\''+m.k+'\';render()" class="flex-1 flex flex-col items-center gap-1 pb-3 pt-2.5" style="background:none;border:none;cursor:pointer;color:'+(a?'#fff':'#6b7280')+';'+bb+'"><span class="text-2xl" style="filter:'+(a?'none':'grayscale(60%) brightness(0.7)')+'">'+m.i+'</span><span class="text-xs" style="font-weight:'+(a?700:500)+'">'+m.l+'</span></button>';
+      h+='<button onclick="S.activeMode=\''+m.k+'\';render()" class="htab'+(a?' on':'')+'"><span class="htab-icon">'+m.i+'</span>'+m.l+'</button>';
     }
   });
-  // Stats + Settings
-  h+='<button onclick="nav(\'progress\')" class="flex flex-col items-center gap-1 pb-3 pt-2.5 px-2" style="background:none;border:none;cursor:pointer;color:#6b7280;border-bottom:3px solid transparent"><span class="text-xl" style="filter:grayscale(60%) brightness(0.7)">\uD83D\uDCCA</span><span class="text-[10px]" style="font-weight:500">Stats</span></button>';
-  h+='<button onclick="nav(\'settings\')" class="flex flex-col items-center gap-1 pb-3 pt-2.5 px-2" style="background:none;border:none;cursor:pointer;color:#6b7280;border-bottom:3px solid transparent"><span class="text-xl" style="filter:grayscale(60%) brightness(0.7)">\u2699\uFE0F</span><span class="text-[10px]" style="font-weight:500">Settings</span></button>';
-  h+='</div></div>';
-
-  // ── Category tabs + Daily Focus toggle ──
-  h+='<div class="px-4 pt-3 pb-2 flex items-center gap-2">';
-  CATEGORIES.forEach(function(cat){
-    h+='<button onclick="S.activeCat=\''+cat+'\';render()" class="px-4 py-1.5 rounded-3xl text-[13px] font-semibold" style="border:none;cursor:pointer;background:'+(S.activeCat===cat?'#ef4444':'rgba(255,255,255,0.07)')+';color:'+(S.activeCat===cat?'#fff':'#9ca3af')+'">'+cat+'</button>';
-  });
-  h+='<div style="flex:1"></div>';
-  // Daily Focus toggle
-  h+='<button onclick="toggleDaily()" class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-semibold" style="border:1px solid '+(S.dailyMode?'rgba(16,185,129,0.4)':'rgba(255,255,255,0.1)')+';background:'+(S.dailyMode?'rgba(16,185,129,0.12)':'rgba(255,255,255,0.04)')+';color:'+(S.dailyMode?'#34d399':'#6b7280')+';cursor:pointer">';
-  h+=(S.dailyMode?'\uD83C\uDFAF':'\u25CB')+' Focus</button>';
+  h+='<button onclick="nav(\'progress\')" class="htab"><span class="htab-icon">\uD83D\uDCCA</span>Stats</button>';
+  h+='<button onclick="nav(\'settings\')" class="htab"><span class="htab-icon">\u2699\uFE0F</span></button>';
   h+='</div>';
 
-  // ── Daily Focus info bar (when ON) ──
+  // Category + Focus
+  h+='<div style="display:flex;align-items:center;gap:8px;padding:14px 20px 8px">';
+  CATEGORIES.forEach(function(cat){
+    h+='<button onclick="S.activeCat=\''+cat+'\';render()" class="cpill'+(S.activeCat===cat?' on':'')+'">'+cat+'</button>';
+  });
+  h+='<div style="flex:1"></div>';
+  h+='<button onclick="toggleDaily()" style="display:flex;align-items:center;gap:5px;padding:5px 12px;border-radius:16px;font-size:11px;font-weight:600;border:1px solid '+(S.dailyMode?'var(--green)':'var(--ink4)')+';color:'+(S.dailyMode?'var(--green)':'var(--ink3)')+';background:'+(S.dailyMode?'var(--green-soft)':'transparent')+';cursor:pointer">'+(S.dailyMode?'\uD83C\uDFAF':'\u25CB')+' Focus</button>';
+  h+='</div>';
+
+  // Focus info bar
   if(S.dailyMode){
     var streak=getStreak();
     var today=new Date().toISOString().slice(0,10);
     var practiced=S.practiceDays.indexOf(today)>=0;
-    h+='<div class="mx-4 mb-2 rounded-xl px-3 py-2 flex items-center justify-between" style="background:rgba(16,185,129,0.06);border:1px solid rgba(16,185,129,0.15)">';
-    h+='<div class="flex items-center gap-2"><span class="text-xs" style="color:#34d399">\uD83C\uDFAF SRS Focus: '+S.dailyLimit+' words/source</span>';
-    if(streak>0)h+='<span class="text-[10px]" style="color:#f59e0b">\uD83D\uDD25 '+streak+'d</span>';
-    h+='</div>';
-    h+='<span class="text-[10px] px-1.5 py-0.5 rounded-full" style="background:'+(practiced?'rgba(16,185,129,0.2)':'rgba(245,158,11,0.2)')+';color:'+(practiced?'#34d399':'#fbbf24')+'">'+(practiced?'\u2713':'\u00B7\u00B7\u00B7')+'</span>';
-    h+='</div>';
+    h+='<div style="margin:0 20px 8px;padding:7px 14px;border-radius:10px;background:var(--green-soft);border:1px solid rgba(58,125,68,0.12);font-size:11px;color:var(--green);display:flex;justify-content:space-between;align-items:center">';
+    h+='<span>\uD83C\uDFAF SRS Focus: '+S.dailyLimit+' words/source</span>';
+    h+='<span>';
+    if(streak>0)h+='<span style="color:var(--gold)">\uD83D\uDD25 '+streak+'d</span> ';
+    h+=(practiced?'\u2713':'\u00B7\u00B7\u00B7');
+    h+='</span></div>';
   }
 
-  // ── Source cards ──
-  h+='<div class="px-4 pt-1 pb-2"><div class="flex justify-between items-center mb-2"><h2 class="text-lg font-bold">Select Source</h2><span class="text-[13px] text-gray-500">'+catCnt+' words</span></div>';
+  // Source cards
+  h+='<div style="padding:6px 20px"><div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px"><h2 style="font-size:15px;font-weight:700;color:var(--ink2)">Select Source</h2><span style="font-size:13px;color:var(--ink4)">'+catCnt+' words</span></div>';
 
+  var SRC_BG={'H':['#c23b22','#8b1a0e'],'\u767E':['#c23b22','#8b1a0e'],'\u54AA':['#d97706','#92400e'],'\u4E66':['#059669','#065f46'],'\u6570':['#2563eb','#1e40af']};
   catSrc.forEach(function(src,i){
-    var cs=SRC_COLORS[src.icon]||['#6b7280','#4b5563'];
+    var cs=SRC_BG[src.icon]||['#6b7280','#4b5563'];
     var wc=S.wordCounts[src.id]||0,tc=S.toneCounts[src.id]||0;
-    var extraInfo='';
+    var info='';
     if(S.dailyMode){
       var dc=getDueCount(src.id);
-      extraInfo=dc>0?'<span style="color:#34d399;font-weight:600">'+dc+' to practice</span>':'<span style="color:#6b7280">All caught up \u2713</span>';
+      info=dc>0?'<span style="color:var(--green);font-weight:600">'+dc+' to practice</span>':'<span style="color:var(--ink4)">All caught up \u2713</span>';
     }else{
-      extraInfo=wc+' words'+(tc?' \u00B7 '+tc+' tone rules':'');
+      info=wc+' words'+(tc?' \u00B7 '+tc+' tone rules':'');
     }
-    h+='<div onclick="openSrc('+src.id+')" class="card-hover rounded-2xl p-4 mb-2.5 flex items-center gap-3.5 cursor-pointer fade-up" style="background:linear-gradient(135deg,#151a2d,#1b2240);border:1px solid rgba(255,255,255,0.06);animation-delay:'+i*60+'ms"><div class="w-[52px] h-[52px] rounded-[14px] flex items-center justify-center text-xl font-bold flex-shrink-0" style="background:linear-gradient(135deg,'+cs[0]+','+cs[1]+');box-shadow:0 4px 12px rgba(0,0,0,0.3)">'+src.icon+'</div><div class="flex-1"><div class="font-semibold text-[15px]">'+esc(src.label)+'</div><div class="text-[13px] text-gray-400 mt-0.5">'+extraInfo+'</div></div><span class="text-gray-600 text-xl">\u2192</span></div>';
+    h+='<div onclick="openSrc('+src.id+')" class="src-card fade-up" style="animation-delay:'+i*60+'ms"><div class="src-icon font-cn" style="background:linear-gradient(135deg,'+cs[0]+','+cs[1]+')">'+src.icon+'</div><div style="flex:1"><div style="font-size:15px;font-weight:700">'+esc(src.label)+'</div><div style="font-size:12px;color:var(--ink3);margin-top:2px">'+info+'</div></div><span style="color:var(--ink4);font-size:18px">\u2192</span></div>';
   });
-  if(!catSrc.length)h+='<div class="text-center py-10 text-gray-500">No sources</div>';
+  if(!catSrc.length)h+='<div style="text-align:center;padding:40px 0;color:var(--ink4)">No sources</div>';
   h+='</div>';
 
-  // ── Today's Session (shows words studied today) ──
+  // Today's session
   var todayWords=S.todayStudied.map(function(id){return S.allWords.find(function(w){return w.id===id})}).filter(Boolean);
   if(todayWords.length>0){
-    h+='<div class="px-4 pb-4"><div class="rounded-2xl p-4 border border-white/[0.06]" style="background:linear-gradient(145deg,#151a2d,#1b2240)">';
-    h+='<div class="flex items-center justify-between mb-3"><span class="text-sm font-semibold">\uD83D\uDCDD Today\'s Session</span>';
-    h+='<button onclick="reviewToday()" class="text-[11px] px-3 py-1 rounded-full font-semibold" style="background:rgba(239,68,68,0.15);color:#f87171;border:none;cursor:pointer">\uD83D\uDD01 Revise</button></div>';
-    // Rating summary
+    h+='<div style="padding:0 20px;margin-top:4px"><div style="padding:16px;background:var(--card);border-radius:14px;box-shadow:var(--shadow);border:1px solid rgba(26,20,16,0.04)">';
+    h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><span style="font-size:13px;font-weight:700;color:var(--ink2)">\uD83D\uDCDD Today\'s Session</span>';
+    h+='<button onclick="reviewToday()" style="font-size:11px;padding:4px 12px;border-radius:10px;border:1px solid var(--red);color:var(--red);background:var(--red-soft);cursor:pointer">\uD83D\uDD01 Revise</button></div>';
     var todayCounts={};todayWords.forEach(function(w){var r=S.ratings[w.id];if(r!==undefined){todayCounts[r]=(todayCounts[r]||0)+1}});
-    h+='<div class="flex gap-1.5 flex-wrap mb-3">';
-    RATINGS.forEach(function(r){var cnt=todayCounts[r.v]||0;if(cnt)h+='<span class="px-2 py-0.5 rounded text-[11px] font-medium" style="background:'+r.bg+';color:#fff">'+r.icon+' '+cnt+'</span>'});
-    h+='<span class="text-[11px] text-gray-500 self-center">'+todayWords.length+' words studied</span>';
-    h+='</div>';
-    // Word chips (scrollable)
-    h+='<div style="display:flex;gap:6px;flex-wrap:wrap;max-height:80px;overflow-y:auto">';
-    todayWords.forEach(function(tw){
-      var r=S.ratings[tw.id];var rbg=r!==undefined?RATINGS.find(function(x){return x.v===r}).bg:'#374151';
-      h+='<span class="px-2 py-1 rounded-lg text-[12px] font-chinese" style="background:'+rbg+';color:#fff">'+esc(tw.h)+'</span>';
-    });
+    h+='<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">';
+    RATINGS.forEach(function(r){var cnt=todayCounts[r.v]||0;if(cnt)h+='<span style="padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600;background:'+r.bg+';color:#fff">'+r.icon+' '+cnt+'</span>'});
+    h+='<span style="font-size:11px;color:var(--ink3);align-self:center">'+todayWords.length+' words</span></div>';
+    h+='<div style="display:flex;gap:5px;flex-wrap:wrap;max-height:70px;overflow-y:auto">';
+    todayWords.forEach(function(tw){h+='<span class="tchip font-cn">'+esc(tw.h)+'</span>'});
     h+='</div></div></div>';
   }
 
-  // ── DB status (subtle, at bottom) ──
-  var dbBadge=dataSource==='supabase'?'\uD83D\uDFE2 Live':'<span style="color:#fbbf24">\uD83D\uDCE6 Offline</span>';
-  h+='<div class="text-center text-[10px] text-gray-600 pb-4">'+dbBadge+'</div>';
+  // DB status
+  var dbBadge=dataSource==='supabase'?'\uD83D\uDFE2 Live':'<span style="color:var(--gold)">\uD83D\uDCE6 Offline</span>';
+  h+='<div style="text-align:center;font-size:10px;color:var(--ink4);padding:10px 0">'+dbBadge+'</div>';
 }
 
 // ═══ STUDY ═══
 else if(S.screen==='study'){
   var f=getF(),w=f[S.si];
   var studyTitle=S.currentSource?esc(S.currentSource.label):'\uD83D\uDD01 Today\'s Revision';
-  var focusBadge=S.dailyMode?'<span class="text-[10px] px-1.5 py-0.5 rounded-full ml-2" style="background:rgba(16,185,129,0.15);color:#34d399;vertical-align:middle">\uD83C\uDFAF</span>':'';
-  h+=hdr(studyTitle+focusBadge,'<span class="text-sm text-gray-400">'+(S.si+1)+'/'+f.length+'</span>');
-  if(!w){h+='<div class="text-center py-20 text-gray-500">'+(S.sFilt!==null?'No words with this rating':'No words')+'</div>'}
+  var focusBadge=S.dailyMode?'<span style="font-size:10px;padding:2px 8px;background:var(--green-soft);color:var(--green);border-radius:8px;font-weight:600;vertical-align:middle;margin-left:6px">\uD83C\uDFAF</span>':'';
+  h+=hdr(studyTitle+focusBadge,'<span style="font-size:13px;color:var(--ink4)">'+(S.si+1)+'/'+f.length+'</span>');
+  if(!w){h+='<div style="text-align:center;padding:80px 0;color:var(--ink4)">'+(S.sFilt!==null?'No words with this rating':'No words')+'</div>'}
   else{
-    h+='<div class="p-4">'+progBar(S.si+1,f.length);
+    h+='<div style="padding:16px 20px 20px">'+progBar(S.si+1,f.length);
     h+=testModeTabs();
-    h+='<div class="flex gap-1.5 flex-wrap justify-center mb-3"><button onclick="S.sFilt=null;S.si=0;S.sRev=0;canvasData=null;render()" class="px-2.5 py-1 rounded-2xl text-[11px] font-medium" style="background:'+(S.sFilt===null?'#ef4444':'#374151')+';border:none;color:#fff;cursor:pointer">All ('+S.words.length+')</button>';
-    RATINGS.forEach(function(r){h+='<button onclick="S.sFilt='+r.v+';S.si=0;S.sRev=0;canvasData=null;render()" class="px-2 py-1 rounded-2xl text-[11px]" style="background:'+(S.sFilt===r.v?r.bg:'#374151')+';border:none;color:#fff;cursor:pointer">'+r.icon+'</button>'});
+    // Rating filter pills
+    h+='<div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-bottom:12px"><button onclick="S.sFilt=null;S.si=0;S.sRev=0;canvasData=null;render()" class="cpill'+(S.sFilt===null?' on':'')+'">All ('+S.words.length+')</button>';
+    RATINGS.forEach(function(r){h+='<button onclick="S.sFilt='+r.v+';S.si=0;S.sRev=0;canvasData=null;render()" style="width:32px;height:32px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;border:'+(S.sFilt===r.v?'2px solid var(--ink)':'2px solid transparent')+';background:'+(S.sFilt===r.v?r.bg:'var(--bg2)')+';font-size:13px;cursor:pointer;opacity:'+(S.sFilt===r.v?1:0.5)+'">'+r.icon+'</button>'});
     h+='</div>';
 
     // ═══ STUDY CARD ═══
     var maxS=getSteps(w).length;var fullS=S.sRev>=maxS;
     if(S.testMode==='read'){
-      h+='<div onclick="advStudy()" class="rounded-[20px] p-6 border border-white/[0.08] text-center cursor-pointer mb-3" style="background:linear-gradient(145deg,#151a2d,#1b2240);min-height:260px">';
-      // Always: hanzi + tone badge
+      h+='<div onclick="advStudy()" class="scard">';
       if(w.t)h+=toneRuleBadge(w);
-      h+='<div class="text-7xl font-bold mb-4 leading-none font-chinese">'+esc(w.h)+'</div>';
+      h+='<div class="hanzi-big font-cn">'+esc(w.h)+'</div>';
       // Progressive: sentence → hint → jp → pinyin+meaning
-      if(w.s&&stepRevealed(w,'sentence',S.sRev))h+='<div class="text-sm text-gray-400 mt-2 border-t border-white/5 pt-3 font-chinese fade-up">\uD83D\uDCAC '+esc(w.s)+'</div>';
-      if(w.hi&&stepRevealed(w,'hint',S.sRev))h+='<div class="text-xs mt-2 italic fade-up" style="color:#a78bfa">\uD83D\uDCA1 '+esc(w.hi)+'</div>';
+      if(w.s&&stepRevealed(w,'sentence',S.sRev))h+=sentenceCtx(w,stepRevealed(w,'answer',S.sRev));
+      if(w.hi&&stepRevealed(w,'hint',S.sRev))h+='<div class="rv rv-h fade-up">\uD83D\uDCA1 '+esc(w.hi)+'</div>';
       if(hasJpHint(w)&&stepRevealed(w,'jp',S.sRev))h+=getJapaneseHint(w);
       if(stepRevealed(w,'answer',S.sRev)){
-        h+='<div class="mt-3 pt-3 border-t border-white/5 fade-up">';
-        h+='<div class="text-2xl text-amber-400 mb-1 font-chinese">'+esc(w.p)+'</div>';
-        h+='<div class="text-[17px] text-gray-300">'+esc(w.m)+'</div>';
-        if(w.mr)h+='<div class="text-sm text-gray-500 mt-1">'+esc(w.mr)+'</div>';
+        h+='<div class="rv-ans fade-up">';
+        h+='<div class="font-cn" style="font-size:24px;color:var(--red);margin-bottom:4px">'+esc(w.p)+'</div>';
+        h+='<div style="font-size:17px;color:var(--ink2)">'+esc(w.m)+'</div>';
+        if(w.mr)h+='<div style="font-size:14px;color:var(--ink3);margin-top:4px">'+esc(w.mr)+'</div>';
         h+='</div>';
       }
-      // Dots + reveal button
       h+=revealDots(w,S.sRev);
       if(!fullS)h+=revealBtn('advStudy()',w,S.sRev);
-      else h+='<div class="text-[10px] text-gray-600 mt-1">\u2190 \u2192 navigate \u00B7 0-5 rate</div>';
+      else h+='<div style="font-size:10px;color:var(--ink4);margin-top:6px">\u2190 \u2192 navigate \u00B7 0-5 rate</div>';
       h+='</div>';
     }
     else if(S.testMode==='recognize'){
-      h+='<div onclick="advStudy()" class="rounded-[20px] p-6 border border-white/[0.08] text-center cursor-pointer mb-3" style="background:linear-gradient(145deg,#151a2d,#1b2240);min-height:260px">';
-      // Always: pinyin + meaning
-      h+='<div class="text-2xl text-amber-400 mb-2 font-chinese">'+esc(w.p)+'</div>';
-      h+='<div class="text-[17px] text-gray-300 mb-2">'+esc(w.m)+'</div>';
-      if(w.mr)h+='<div class="text-sm text-gray-500 mb-3">'+esc(w.mr)+'</div>';
-      // Progressive: sentence → hint → jp → hanzi
-      h+='<div class="border-t border-white/5 pt-3">';
-      if(w.s&&stepRevealed(w,'sentence',S.sRev))h+='<div class="text-sm text-gray-400 mt-1 font-chinese fade-up">\uD83D\uDCAC '+esc(w.s)+'</div>';
-      if(w.hi&&stepRevealed(w,'hint',S.sRev))h+='<div class="text-xs mt-2 italic fade-up" style="color:#a78bfa">\uD83D\uDCA1 '+esc(w.hi)+'</div>';
+      h+='<div onclick="advStudy()" class="scard">';
+      h+='<div class="font-cn" style="font-size:24px;color:var(--red);margin-bottom:6px">'+esc(w.p)+'</div>';
+      h+='<div style="font-size:17px;color:var(--ink2);margin-bottom:6px">'+esc(w.m)+'</div>';
+      if(w.mr)h+='<div style="font-size:14px;color:var(--ink3);margin-bottom:10px">'+esc(w.mr)+'</div>';
+      h+='<div style="border-top:1px solid rgba(26,20,16,0.08);padding-top:12px">';
+      if(w.s&&stepRevealed(w,'sentence',S.sRev))h+=sentenceCtx(w,stepRevealed(w,'answer',S.sRev));
+      if(w.hi&&stepRevealed(w,'hint',S.sRev))h+='<div class="rv rv-h fade-up">\uD83D\uDCA1 '+esc(w.hi)+'</div>';
       if(hasJpHint(w)&&stepRevealed(w,'jp',S.sRev))h+=getJapaneseHint(w);
       if(stepRevealed(w,'answer',S.sRev)){
-        h+='<div class="mt-3 fade-up">';
+        h+='<div class="fade-up" style="margin-top:12px">';
         if(w.t)h+=toneRuleBadge(w);
-        h+='<div class="text-7xl font-bold mb-2 leading-none font-chinese">'+esc(w.h)+'</div>';
+        h+='<div class="hanzi-big font-cn">'+esc(w.h)+'</div>';
         h+='</div>';
       }else{
-        h+='<div class="text-5xl text-gray-700 mt-2 mb-1">?</div>';
+        h+='<div style="font-size:56px;color:var(--ink4);margin:8px 0">?</div>';
       }
       h+='</div>';
       h+=revealDots(w,S.sRev);
       if(!fullS)h+=revealBtn('advStudy()',w,S.sRev);
-      else h+='<div class="text-[10px] text-gray-600 mt-1">\u2190 \u2192 navigate \u00B7 0-5 rate</div>';
+      else h+='<div style="font-size:10px;color:var(--ink4);margin-top:6px">\u2190 \u2192 navigate \u00B7 0-5 rate</div>';
       h+='</div>';
     }
     else if(S.testMode==='write'){
-      // WRITE MODE - canvas first, then full reveal
-      h+='<div class="rounded-[20px] p-5 border border-white/[0.08] mb-3" style="background:linear-gradient(145deg,#151a2d,#1b2240)">';
-      h+='<div class="text-center mb-4">';
-      h+='<div class="text-2xl text-amber-400 mb-1 font-chinese">'+esc(w.p)+'</div>';
-      h+='<div class="text-[17px] text-gray-300">'+esc(w.m)+'</div>';
-      if(w.mr)h+='<div class="text-sm text-gray-500 mt-0.5">'+esc(w.mr)+'</div>';
-      h+='</div>';
+      h+='<div class="scard" style="cursor:default">';
+      h+='<div class="font-cn" style="font-size:24px;color:var(--red);margin-bottom:4px">'+esc(w.p)+'</div>';
+      h+='<div style="font-size:17px;color:var(--ink2);margin-bottom:12px">'+esc(w.m)+'</div>';
       h+=canvasHTML(200);
-      h+='<div class="mt-4 text-center">';
+      h+='<div style="margin-top:14px;text-align:center">';
       if(S.sRev>=1){
-        h+='<div class="rounded-xl p-4 mb-2" style="background:rgba(0,0,0,0.3)">';
+        h+='<div style="padding:12px;border-radius:12px;background:var(--bg)">';
         if(w.t)h+=toneRuleBadge(w);
-        h+='<div class="text-6xl font-bold leading-none font-chinese mb-2">'+esc(w.h)+'</div>';
-        if(w.s)h+='<div class="text-sm text-gray-400 font-chinese mt-2">'+esc(w.s)+'</div>';
-        if(w.hi)h+='<div class="text-xs text-purple-400 mt-1 italic">\uD83D\uDCA1 '+esc(w.hi)+'</div>';
+        h+='<div class="font-cn" style="font-size:56px;font-weight:900;margin-bottom:4px">'+esc(w.h)+'</div>';
+        if(w.s)h+='<div style="font-size:13px;color:var(--ink3)" class="font-cn">'+esc(w.s)+'</div>';
+        if(w.hi)h+='<div style="font-size:12px;color:var(--purple);margin-top:4px;font-style:italic">\uD83D\uDCA1 '+esc(w.hi)+'</div>';
         h+=getJapaneseHint(w);
         h+='</div>';
       }else{
-        h+='<button onclick="event.stopPropagation();saveCanvasData();S.sRev=99;render()" class="px-8 py-2.5 rounded-xl text-sm font-medium" style="background:#dc2626;border:none;color:#fff;cursor:pointer">\u2705 Reveal Answer</button>';
+        h+='<button onclick="event.stopPropagation();saveCanvasData();S.sRev=99;render()" class="btn-reveal">\u2705 Reveal Answer</button>';
       }
       h+='</div></div>';
     }
 
-    h+='<div class="text-center mb-3"><div class="text-xs text-gray-400 mb-2">Rate:</div><div class="flex justify-center gap-2">'+rateBtns(w.id)+'</div></div>';
-    h+='<div class="flex gap-2.5"><button onclick="S.si=Math.max(S.si-1,0);S.sRev=0;canvasData=null;render()" class="flex-1 py-3.5 rounded-[14px] font-semibold text-[15px]" style="background:#374151;border:none;color:#fff;cursor:pointer">\u2190 Prev</button><button onclick="S.si=Math.min(S.si+1,'+(f.length-1)+');S.sRev=0;canvasData=null;render()" class="flex-1 py-3.5 rounded-[14px] font-semibold text-[15px]" style="background:#dc2626;border:none;color:#fff;cursor:pointer">Next \u2192</button></div></div>';
+    h+='<div style="text-align:center;margin:12px 0 8px"><div style="font-size:12px;color:var(--ink3);margin-bottom:6px">Rate:</div><div style="display:flex;justify-content:center;gap:8px">'+rateBtns(w.id)+'</div></div>';
+    h+='<div style="display:flex;gap:10px"><button onclick="S.si=Math.max(S.si-1,0);S.sRev=0;canvasData=null;render()" class="btn-prev">\u2190 Prev</button><button onclick="S.si=Math.min(S.si+1,'+(f.length-1)+');S.sRev=0;canvasData=null;render()" class="btn-next">Next \u2192</button></div></div>';
   }
 }
 
@@ -840,52 +910,47 @@ else if(S.screen==='quiz'){
   if(S.qd){
     var p=Math.round((S.qs/S.qw.length)*100),em=p>=90?'\uD83C\uDFC6':p>=70?'\uD83C\uDF89':p>=50?'\uD83D\uDC4D':'\uD83D\uDCAA';
     h+=hdr('Results');
-    h+='<div class="text-center pt-10 px-4"><div class="text-6xl mb-4">'+em+'</div><div class="text-5xl font-extrabold mb-2">'+p+'%</div><div class="text-gray-400 mb-1">'+S.qs+' / '+S.qw.length+' correct</div><div class="text-gray-500 text-sm mb-7">'+esc(S.currentSource?S.currentSource.label:'')+'</div><div class="flex gap-2.5"><button onclick="startQuiz()" class="flex-1 py-3.5 rounded-[14px] font-semibold" style="background:#d97706;border:none;color:#fff;cursor:pointer">Try Again</button><button onclick="home()" class="flex-1 py-3.5 rounded-[14px] font-semibold" style="background:#374151;border:none;color:#fff;cursor:pointer">Home</button></div></div>';
+    h+='<div style="text-align:center;padding:40px 20px"><div style="font-size:56px;margin-bottom:12px">'+em+'</div><div style="font-size:48px;font-weight:800;margin-bottom:6px;color:var(--ink)">'+p+'%</div><div style="color:var(--ink3);margin-bottom:4px">'+S.qs+' / '+S.qw.length+' correct</div><div style="color:var(--ink4);font-size:14px;margin-bottom:28px">'+esc(S.currentSource?S.currentSource.label:'')+'</div><div style="display:flex;gap:10px"><button onclick="startQuiz()" class="btn-next" style="background:var(--gold)">Try Again</button><button onclick="home()" class="btn-prev">Home</button></div></div>';
   }else{
     var w=S.qw[S.qi];
-    h+=hdr(S.currentSource?esc(S.currentSource.label):'Quiz','<span class="text-sm text-gray-400">'+S.qs+'/'+(S.qi+(S.qa?1:0))+'</span>');
+    h+=hdr(S.currentSource?esc(S.currentSource.label):'Quiz','<span style="font-size:13px;color:var(--ink4)">'+S.qs+'/'+(S.qi+(S.qa?1:0))+'</span>');
     if(w){
-      h+='<div class="p-4">';
+      h+='<div style="padding:16px 20px">';
       h+=testModeTabs();
-      h+='<div class="text-sm text-gray-400 mb-1.5">'+(S.qi+1)+' / '+S.qw.length+'</div>'+progBar(S.qi+1,S.qw.length,'#f59e0b','#ef4444');
+      h+='<div style="font-size:13px;color:var(--ink3);margin-bottom:4px">'+(S.qi+1)+' / '+S.qw.length+'</div>'+progBar(S.qi+1,S.qw.length,'var(--gold)','var(--red)');
 
-      // Question
-      h+='<div class="rounded-[20px] p-5 border border-white/[0.08] text-center mb-4" style="background:linear-gradient(145deg,#151a2d,#1b2240)">';
+      h+='<div class="scard" style="cursor:default;min-height:auto;padding:24px 20px;margin:0 0 16px">';
       if(S.testMode==='read'){
-        h+='<div class="text-sm text-gray-400 mb-2">'+(S.qtype==='m'?'What does this mean?':'What is the pinyin?')+'</div>';
-        h+='<div class="text-6xl font-bold font-chinese">'+esc(w.h)+'</div>';
+        h+='<div style="font-size:13px;color:var(--ink3);margin-bottom:8px">'+(S.qtype==='m'?'What does this mean?':'What is the pinyin?')+'</div>';
+        h+='<div class="font-cn" style="font-size:56px;font-weight:900">'+esc(w.h)+'</div>';
       }else{
-        h+='<div class="text-sm text-gray-400 mb-2">'+(S.testMode==='write'?'Draw the hanzi':'Which hanzi is this?')+'</div>';
-        h+='<div class="text-2xl text-amber-400 font-chinese mb-1">'+esc(w.p)+'</div>';
-        h+='<div class="text-base text-gray-300">'+esc(w.m)+'</div>';
+        h+='<div style="font-size:13px;color:var(--ink3);margin-bottom:8px">'+(S.testMode==='write'?'Draw the hanzi':'Which hanzi is this?')+'</div>';
+        h+='<div class="font-cn" style="font-size:24px;color:var(--red);margin-bottom:4px">'+esc(w.p)+'</div>';
+        h+='<div style="font-size:16px;color:var(--ink2)">'+esc(w.m)+'</div>';
       }
       h+='</div>';
 
       if(S.testMode==='write'){
-        // Canvas quiz
         h+=canvasHTML(180);
-        h+='<div class="mt-3">';
+        h+='<div style="margin-top:12px">';
         if(!S.qa){
-          h+='<button onclick="saveCanvasData();S.qa=true;render()" class="w-full py-3.5 rounded-[14px] font-semibold text-[15px]" style="background:#dc2626;border:none;color:#fff;cursor:pointer">Reveal Answer</button>';
+          h+='<button onclick="saveCanvasData();S.qa=true;render()" class="btn-next" style="width:100%">Reveal Answer</button>';
         }else{
-          h+='<div class="text-center py-3 rounded-xl mb-3"><div class="text-5xl font-bold font-chinese mb-1">'+esc(w.h)+'</div><div class="text-sm text-gray-400">Did you get it right?</div></div>';
-          h+='<div class="flex gap-2.5 mb-3"><button onclick="S.qs++;nextQ()" class="flex-1 py-3 rounded-[14px] font-semibold" style="background:#059669;border:none;color:#fff;cursor:pointer">\u2713 Got it</button><button onclick="nextQ()" class="flex-1 py-3 rounded-[14px] font-semibold" style="background:#dc2626;border:none;color:#fff;cursor:pointer">\u2717 Missed</button></div>';
+          h+='<div style="text-align:center;padding:12px;margin-bottom:10px"><div class="font-cn" style="font-size:48px;font-weight:900;margin-bottom:4px">'+esc(w.h)+'</div><div style="font-size:13px;color:var(--ink3)">Did you get it right?</div></div>';
+          h+='<div style="display:flex;gap:10px;margin-bottom:10px"><button onclick="S.qs++;nextQ()" class="btn-next" style="background:var(--green)">\u2713 Got it</button><button onclick="nextQ()" class="btn-next">\u2717 Missed</button></div>';
         }
         h+='</div>';
       }else{
-        // Multiple choice
-        h+='<div class="flex flex-col gap-2.5 mb-4">';
         S.qopts.forEach(function(o){
-          var bg='#1b2240',br='rgba(255,255,255,0.08)';
-          var fs=S.testMode==='recognize'?'font-size:24px;font-family:"Noto Sans SC",sans-serif':'font-size:15px';
-          if(S.qa){if(o===S.qcor){bg='rgba(16,185,129,0.12)';br='#10b981'}else if(o===S.qsel&&o!==S.qcor){bg='rgba(239,68,68,0.12)';br='#ef4444'}}
-          h+='<button onclick="ansQ(this.dataset.v)" data-v="'+esc(o)+'" class="rounded-[14px] py-3.5 px-4 text-left" style="'+fs+';background:'+bg+';border:2px solid '+br+';color:#f1f1f4;cursor:'+(S.qa?'default':'pointer')+';transition:all 0.2s">'+esc(o)+'</button>';
+          var bg='var(--card)',br='rgba(26,20,16,0.08)';
+          var fs=S.testMode==='recognize'?'font-size:24px;font-family:"Noto Serif SC","Noto Sans SC",serif':'font-size:15px';
+          if(S.qa){if(o===S.qcor){bg='var(--green-soft)';br='var(--green)'}else if(o===S.qsel&&o!==S.qcor){bg='var(--red-soft)';br='var(--red)'}}
+          h+='<button onclick="ansQ(this.dataset.v)" data-v="'+esc(o)+'" class="qopt" style="'+fs+';background:'+bg+';border-color:'+br+';cursor:'+(S.qa?'default':'pointer')+'">'+esc(o)+'</button>';
         });
-        h+='</div>';
         if(S.qa){
           var ok=S.qsel===S.qcor;
-          h+='<div class="text-center py-3 rounded-xl mb-3 font-medium" style="background:'+(ok?'rgba(16,185,129,0.15)':'rgba(239,68,68,0.15)')+';color:'+(ok?'#6ee7b7':'#fca5a5')+'">'+(ok?'\uD83C\uDF89 Correct!':'\u274C Answer: '+esc(S.qcor))+'</div>';
-          h+='<button onclick="nextQ()" class="w-full py-3.5 rounded-[14px] font-semibold text-[15px]" style="background:#dc2626;border:none;color:#fff;cursor:pointer">'+(S.qi+1>=S.qw.length?'\uD83D\uDCCA Results':'Next \u2192')+'</button>';
+          h+='<div style="text-align:center;padding:12px;border-radius:12px;margin:8px 0 12px;font-weight:600;background:'+(ok?'var(--green-soft)':'var(--red-soft)')+';color:'+(ok?'var(--green)':'var(--red)')+'">'+(ok?'\uD83C\uDF89 Correct!':'\u274C Answer: '+esc(S.qcor))+'</div>';
+          h+='<button onclick="nextQ()" class="btn-next" style="width:100%">'+(S.qi+1>=S.qw.length?'\uD83D\uDCCA Results':'Next \u2192')+'</button>';
         }
       }
       h+='</div>';
@@ -897,72 +962,63 @@ else if(S.screen==='quiz'){
 else if(S.screen==='flash'){
   var w=S.fw[S.fi];
   var flashTitle=S.currentSource?esc(S.currentSource.label):'Flash';
-  var fBadge=S.dailyMode?'<span class="text-[10px] px-1.5 py-0.5 rounded-full ml-2" style="background:rgba(16,185,129,0.15);color:#34d399;vertical-align:middle">\uD83C\uDFAF</span>':'';
-  h+=hdr(flashTitle+fBadge,'<span class="text-sm text-gray-400">'+(S.fi+1)+'/'+S.fw.length+'</span>');
-  if(!w){h+='<div class="text-center py-20 text-gray-500">No words</div>'}
+  var fBadge=S.dailyMode?'<span style="font-size:10px;padding:2px 8px;background:var(--green-soft);color:var(--green);border-radius:8px;font-weight:600;vertical-align:middle;margin-left:6px">\uD83C\uDFAF</span>':'';
+  h+=hdr(flashTitle+fBadge,'<span style="font-size:13px;color:var(--ink4)">'+(S.fi+1)+'/'+S.fw.length+'</span>');
+  if(!w){h+='<div style="text-align:center;padding:80px 0;color:var(--ink4)">No words</div>'}
   else{
-    h+='<div class="p-4">'+progBar(S.fi+1,S.fw.length,'#10b981','#14b8a6');
+    h+='<div style="padding:16px 20px 20px">'+progBar(S.fi+1,S.fw.length,'var(--green)','var(--blue)');
     h+=testModeTabs();
     var maxF=getSteps(w).length;var fullF=S.ff>=maxF;
 
     if(S.testMode==='write'){
-      // WRITE FLASH with canvas
-      h+='<div class="rounded-[20px] p-5 border border-white/[0.08] mb-3" style="background:linear-gradient(145deg,#151a2d,#1b2240)">';
-      h+='<div class="text-center mb-4">';
-      h+='<div class="text-2xl text-amber-400 mb-1 font-chinese">'+esc(w.p)+'</div>';
-      h+='<div class="text-[17px] text-gray-300">'+esc(w.m)+'</div>';
-      if(w.mr)h+='<div class="text-sm text-gray-500 mt-0.5">'+esc(w.mr)+'</div>';
-      h+='</div>';
+      h+='<div class="scard" style="cursor:default">';
+      h+='<div class="font-cn" style="font-size:24px;color:var(--red);margin-bottom:4px">'+esc(w.p)+'</div>';
+      h+='<div style="font-size:17px;color:var(--ink2);margin-bottom:12px">'+esc(w.m)+'</div>';
       h+=canvasHTML(200);
-      h+='<div class="mt-4 text-center">';
+      h+='<div style="margin-top:14px;text-align:center">';
       if(S.ff>=1){
-        h+='<div class="rounded-xl p-4" style="background:rgba(0,0,0,0.3)">';
+        h+='<div style="padding:12px;border-radius:12px;background:var(--bg)">';
         if(w.t)h+=toneRuleBadge(w);
-        h+='<div class="text-6xl font-bold leading-none font-chinese mb-2">'+esc(w.h)+'</div>';
-        if(w.s)h+='<div class="text-sm text-gray-400 font-chinese mt-2">'+esc(w.s)+'</div>';
+        h+='<div class="font-cn" style="font-size:56px;font-weight:900;margin-bottom:4px">'+esc(w.h)+'</div>';
+        if(w.s)h+='<div style="font-size:13px;color:var(--ink3)" class="font-cn">'+esc(w.s)+'</div>';
         h+=getJapaneseHint(w);
         h+='</div>';
       }else{
-        h+='<button onclick="event.stopPropagation();saveCanvasData();S.ff=99;render()" class="px-8 py-2.5 rounded-xl text-sm font-medium" style="background:#dc2626;border:none;color:#fff;cursor:pointer">\u2705 Reveal Answer</button>';
+        h+='<button onclick="event.stopPropagation();saveCanvasData();S.ff=99;render()" class="btn-reveal">\u2705 Reveal Answer</button>';
       }
       h+='</div></div>';
     }
     else if(S.testMode==='read'){
-      // READ FLASH - progressive: hanzi → sentence → hint → JP → pinyin+meaning
-      h+='<div onclick="advFlash()" class="rounded-[20px] p-6 border border-white/[0.08] text-center cursor-pointer mb-3" style="background:linear-gradient(145deg,#151a2d,#1b2240);min-height:260px">';
+      h+='<div onclick="advFlash()" class="scard">';
       if(w.t)h+=toneRuleBadge(w);
-      h+='<div class="text-7xl font-bold mb-4 leading-none font-chinese">'+esc(w.h)+'</div>';
-      if(w.s&&stepRevealed(w,'sentence',S.ff))h+='<div class="text-sm text-gray-400 mt-2 border-t border-white/5 pt-3 font-chinese fade-up">\uD83D\uDCAC '+esc(w.s)+'</div>';
-      if(w.hi&&stepRevealed(w,'hint',S.ff))h+='<div class="text-xs mt-2 italic fade-up" style="color:#a78bfa">\uD83D\uDCA1 '+esc(w.hi)+'</div>';
+      h+='<div class="hanzi-big font-cn">'+esc(w.h)+'</div>';
+      if(w.s&&stepRevealed(w,'sentence',S.ff))h+=sentenceCtx(w,stepRevealed(w,'answer',S.ff));
+      if(w.hi&&stepRevealed(w,'hint',S.ff))h+='<div class="rv rv-h fade-up">\uD83D\uDCA1 '+esc(w.hi)+'</div>';
       if(hasJpHint(w)&&stepRevealed(w,'jp',S.ff))h+=getJapaneseHint(w);
       if(stepRevealed(w,'answer',S.ff)){
-        h+='<div class="mt-3 pt-3 border-t border-white/5 fade-up">';
-        h+='<div class="text-2xl text-amber-400 mb-1 font-chinese">'+esc(w.p)+'</div>';
-        h+='<div class="text-[17px] text-gray-300">'+esc(w.m)+'</div>';
-        if(w.mr)h+='<div class="text-sm text-gray-500 mt-1">'+esc(w.mr)+'</div>';
-        h+='</div>';
+        h+='<div class="rv-ans fade-up"><div class="font-cn" style="font-size:24px;color:var(--red);margin-bottom:4px">'+esc(w.p)+'</div>';
+        h+='<div style="font-size:17px;color:var(--ink2)">'+esc(w.m)+'</div>';
+        if(w.mr)h+='<div style="font-size:14px;color:var(--ink3);margin-top:4px">'+esc(w.mr)+'</div></div>';
       }
       h+=revealDots(w,S.ff);
       if(!fullF)h+=revealBtn('advFlash()',w,S.ff);
       h+='</div>';
     }
     else{
-      // RECOGNIZE FLASH - progressive: pinyin+meaning → sentence → hint → JP → hanzi
-      h+='<div onclick="advFlash()" class="rounded-[20px] p-6 border border-white/[0.08] text-center cursor-pointer mb-3" style="background:linear-gradient(145deg,#151a2d,#1b2240);min-height:260px">';
-      h+='<div class="text-2xl text-amber-400 mb-2 font-chinese">'+esc(w.p)+'</div>';
-      h+='<div class="text-[17px] text-gray-300 mb-2">'+esc(w.m)+'</div>';
-      if(w.mr)h+='<div class="text-sm text-gray-500 mb-3">'+esc(w.mr)+'</div>';
-      h+='<div class="border-t border-white/5 pt-3">';
-      if(w.s&&stepRevealed(w,'sentence',S.ff))h+='<div class="text-sm text-gray-400 mt-1 font-chinese fade-up">\uD83D\uDCAC '+esc(w.s)+'</div>';
-      if(w.hi&&stepRevealed(w,'hint',S.ff))h+='<div class="text-xs mt-2 italic fade-up" style="color:#a78bfa">\uD83D\uDCA1 '+esc(w.hi)+'</div>';
+      h+='<div onclick="advFlash()" class="scard">';
+      h+='<div class="font-cn" style="font-size:24px;color:var(--red);margin-bottom:6px">'+esc(w.p)+'</div>';
+      h+='<div style="font-size:17px;color:var(--ink2);margin-bottom:6px">'+esc(w.m)+'</div>';
+      if(w.mr)h+='<div style="font-size:14px;color:var(--ink3);margin-bottom:10px">'+esc(w.mr)+'</div>';
+      h+='<div style="border-top:1px solid rgba(26,20,16,0.08);padding-top:12px">';
+      if(w.s&&stepRevealed(w,'sentence',S.ff))h+=sentenceCtx(w,stepRevealed(w,'answer',S.ff));
+      if(w.hi&&stepRevealed(w,'hint',S.ff))h+='<div class="rv rv-h fade-up">\uD83D\uDCA1 '+esc(w.hi)+'</div>';
       if(hasJpHint(w)&&stepRevealed(w,'jp',S.ff))h+=getJapaneseHint(w);
       if(stepRevealed(w,'answer',S.ff)){
-        h+='<div class="mt-3 fade-up">';
+        h+='<div class="fade-up" style="margin-top:12px">';
         if(w.t)h+=toneRuleBadge(w);
-        h+='<div class="text-7xl font-bold mb-2 leading-none font-chinese">'+esc(w.h)+'</div>';
-        h+='</div>';
+        h+='<div class="hanzi-big font-cn">'+esc(w.h)+'</div></div>';
       }else{
-        h+='<div class="text-5xl text-gray-700 mt-2 mb-1">?</div>';
+        h+='<div style="font-size:56px;color:var(--ink4);margin:8px 0">?</div>';
       }
       h+='</div>';
       h+=revealDots(w,S.ff);
@@ -970,21 +1026,29 @@ else if(S.screen==='flash'){
       h+='</div>';
     }
 
-    h+='<div class="mb-3"><div class="flex justify-center gap-2">'+rateBtns(w.id,38)+'</div></div>';
-    h+='<div class="flex gap-2.5"><button onclick="S.fi=Math.max(S.fi-1,0);S.ff=0;canvasData=null;render()" class="flex-1 py-3.5 rounded-[14px] font-semibold" style="background:#374151;border:none;color:#fff;cursor:pointer">\u2190 Prev</button><button onclick="S.fi=Math.min(S.fi+1,'+(S.fw.length-1)+');S.ff=0;canvasData=null;render()" class="flex-1 py-3.5 rounded-[14px] font-semibold" style="background:#059669;border:none;color:#fff;cursor:pointer">Next \u2192</button></div></div>';
+    h+='<div style="text-align:center;margin:10px 0 8px"><div style="display:flex;justify-content:center;gap:8px">'+rateBtns(w.id,38)+'</div></div>';
+    h+='<div style="display:flex;gap:10px"><button onclick="S.fi=Math.max(S.fi-1,0);S.ff=0;canvasData=null;render()" class="btn-prev">\u2190 Prev</button><button onclick="S.fi=Math.min(S.fi+1,'+(S.fw.length-1)+');S.ff=0;canvasData=null;render()" class="btn-next" style="background:var(--green)">Next \u2192</button></div></div>';
   }
 }
 
 // ═══ TONE RULES ═══
 else if(S.screen==='tone'){
   h+=hdr('Tone Rules');
-  h+='<div class="p-4 pt-5"><h2 class="text-xl font-bold mb-4">\uD83C\uDFB5 5 Tone Sandhi Rules</h2>';
+  h+='<div style="padding:16px 20px"><h2 style="font-size:18px;font-weight:700;margin-bottom:14px">\uD83C\uDFB5 5 Tone Sandhi Rules</h2>';
   S.toneRules.forEach(function(r,i){
     var rw=S.toneRuleWords.filter(function(t){return(t.rule_id||t.rid)===(r.id||r.n)});
-    var rn=r.rule_number||r.n,rname=r.rule_name||r.name,rdesc=r.description||r.desc;
-    var reh=r.example_hanzi||r.eh,reb=r.example_before||r.eb,rea=r.example_after||r.ea;
-    h+='<div class="rounded-[18px] p-4 border border-white/[0.08] mb-3 fade-up" style="background:linear-gradient(145deg,#151a2d,#1b2240);animation-delay:'+i*80+'ms"><div class="flex items-center gap-3 mb-3"><div class="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-lg flex-shrink-0" style="background:'+RULE_COLORS[i]+'">'+rn+'</div><div><div class="font-semibold text-sm">'+esc(rname)+'</div><div class="text-xs text-gray-400 mt-0.5">'+esc(rdesc)+'</div></div></div><div class="rounded-xl p-3 flex items-center gap-4 justify-center" style="background:rgba(0,0,0,0.3)"><div class="text-center"><div class="text-[10px] text-gray-500 mb-1">Example</div><div class="text-2xl font-chinese">'+esc(reh)+'</div></div><div class="text-center"><div class="text-[10px] text-gray-500 mb-1">Before</div><div class="text-base text-red-400 font-chinese">'+esc(reb)+'</div></div><span class="text-gray-500">\u2192</span><div class="text-center"><div class="text-[10px] text-gray-500 mb-1">After</div><div class="text-base text-emerald-400 font-chinese">'+esc(rea)+'</div></div></div>';
-    if(rw.length){h+='<div class="text-[11px] text-gray-500 mt-2.5">'+rw.length+' words: <span class="text-gray-400 font-chinese">'+rw.slice(0,10).map(function(w){return esc(w.hanzi||w.h)}).join(', ')+(rw.length>10?'...':'')+'</span></div>'}
+    h+='<div style="background:var(--card);border-radius:14px;padding:14px;margin-bottom:10px;box-shadow:var(--shadow);border:1px solid rgba(26,20,16,0.04)">';
+    h+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><span style="background:var(--gold-soft);color:var(--gold);padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700">Rule '+(r.id||r.n)+'</span><span style="font-size:14px;font-weight:600">'+esc(r.name||r.nm)+'</span></div>';
+    h+='<div style="font-size:13px;color:var(--ink3);margin-bottom:8px">'+esc(r.description||r.desc)+'</div>';
+    if(rw.length){
+      h+='<div style="display:flex;gap:4px;flex-wrap:wrap">';
+      rw.slice(0,8).forEach(function(tw){
+        var ww=S.allWords.find(function(x){return x.id===(tw.word_id||tw.wid)});
+        if(ww)h+='<span class="tchip font-cn" style="font-size:14px">'+esc(ww.h)+'</span>';
+      });
+      if(rw.length>8)h+='<span style="font-size:11px;color:var(--ink4);align-self:center">+'+(rw.length-8)+' more</span>';
+      h+='</div>';
+    }
     h+='</div>';
   });
   h+='</div>';
@@ -993,68 +1057,39 @@ else if(S.screen==='tone'){
 // ═══ PROGRESS ═══
 else if(S.screen==='progress'){
   h+=hdr('Progress');
-  var rc=Object.keys(S.ratings).length,tw=S.allWords.length;
+  h+='<div style="padding:16px 20px">';
+  var rc=Object.keys(S.ratings).length;
+  var tw=S.allWords.length;
+  var pct=tw>0?Math.round(rc/tw*100):0;
+  h+='<div style="text-align:center;margin-bottom:24px"><div style="font-size:56px;font-weight:800;color:var(--ink)">'+pct+'%</div><div style="color:var(--ink3);font-size:14px">'+rc+' / '+tw+' words rated</div></div>';
 
-  // Practice Day Tracking
-  var streak=getStreak();
-  var totalDays=S.practiceDays.length;
-  h+='<div class="p-4 pt-5">';
-  h+='<div class="rounded-[18px] p-5 border border-white/[0.08] mb-5" style="background:linear-gradient(145deg,#151a2d,#1b2240)">';
-  h+='<div class="text-sm text-gray-400 mb-3">\uD83D\uDD25 Practice Streak</div>';
-  h+='<div class="grid grid-cols-3 gap-2.5 mb-4">';
-  [{v:streak,l:'Current Streak',c:'#ef4444'},{v:totalDays,l:'Total Days',c:'#f59e0b'},{v:rc,l:'Words Rated',c:'#10b981'}].forEach(function(x){
-    h+='<div class="rounded-[14px] py-3 px-2 text-center" style="background:rgba(0,0,0,0.3)"><div class="text-xl font-bold" style="color:'+x.c+'">'+x.v+'</div><div class="text-[10px] text-gray-500 mt-0.5">'+x.l+'</div></div>';
+  // Rating breakdown
+  h+='<div style="background:var(--card);border-radius:14px;padding:16px;margin-bottom:14px;box-shadow:var(--shadow)">';
+  h+='<div style="font-size:14px;font-weight:700;margin-bottom:10px">Rating Breakdown</div>';
+  var rCounts={};S.allWords.forEach(function(w){var r=S.ratings[w.id];if(r!==undefined){rCounts[r]=(rCounts[r]||0)+1}});
+  RATINGS.forEach(function(r){
+    var cnt=rCounts[r.v]||0;var pBar=rc>0?(cnt/rc)*100:0;
+    h+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><span style="width:24px;text-align:center;font-size:14px">'+r.icon+'</span><div style="flex:1;height:6px;background:var(--bg2);border-radius:3px;overflow:hidden"><div style="height:100%;width:'+pBar+'%;background:'+r.bg+';border-radius:3px;transition:width 0.3s"></div></div><span style="width:30px;text-align:right;font-size:12px;color:var(--ink3)">'+cnt+'</span></div>';
   });
   h+='</div>';
-  // Last 30 days calendar heatmap
-  h+='<div class="text-xs text-gray-500 mb-2">Last 30 days</div>';
-  h+='<div style="display:flex;gap:3px;flex-wrap:wrap">';
-  var today=new Date();
-  for(var di=29;di>=0;di--){
-    var d=new Date(today);d.setDate(d.getDate()-di);
-    var ds=d.toISOString().slice(0,10);
-    var active=S.practiceDays.indexOf(ds)>=0;
-    var isToday=di===0;
-    h+='<div title="'+ds+'" style="width:18px;height:18px;border-radius:4px;background:'+(active?'#10b981':'rgba(255,255,255,0.04)')+';border:'+(isToday?'1.5px solid #fff':'1px solid rgba(255,255,255,0.06)')+';opacity:'+(active?1:0.5)+'"></div>';
-  }
+
+  // Heatmap
+  h+='<div style="background:var(--card);border-radius:14px;padding:16px;margin-bottom:14px;box-shadow:var(--shadow)">';
+  h+='<div style="font-size:14px;font-weight:700;margin-bottom:10px">\uD83D\uDD25 Practice Calendar</div>';
+  var days=[];var d=new Date();for(var i=29;i>=0;i--){var dd=new Date(d);dd.setDate(dd.getDate()-i);days.push(dd.toISOString().slice(0,10))}
+  h+='<div style="display:grid;grid-template-columns:repeat(10,1fr);gap:3px">';
+  days.forEach(function(day){
+    var active=S.practiceDays.indexOf(day)>=0;
+    h+='<div title="'+day+'" style="aspect-ratio:1;border-radius:3px;background:'+(active?'var(--green)':'var(--bg2)')+';opacity:'+(active?1:0.4)+'"></div>';
+  });
   h+='</div></div>';
 
-  // SRS Review Schedule
-  var dueNow=0,dueWeek=0;
-  var nowTs=new Date();
-  var weekTs=new Date(nowTs.getTime()+7*86400000);
-  Object.keys(S.reviewData).forEach(function(wid){
-    var rd=S.reviewData[wid];
-    if(rd&&rd.nr){
-      var nr=new Date(rd.nr);
-      if(nr<=nowTs)dueNow++;
-      else if(nr<=weekTs)dueWeek++;
-    }
-  });
-  if(dueNow>0||dueWeek>0){
-    h+='<div class="rounded-[18px] p-5 border border-white/[0.08] mb-5" style="background:linear-gradient(145deg,#151a2d,#1b2240)">';
-    h+='<div class="text-sm text-gray-400 mb-3">\uD83D\uDCC5 Review Schedule</div>';
-    h+='<div class="grid grid-cols-2 gap-2.5">';
-    h+='<div class="rounded-[14px] py-3 px-2 text-center" style="background:rgba(0,0,0,0.3)"><div class="text-xl font-bold text-red-400">'+dueNow+'</div><div class="text-[10px] text-gray-500">Due Now</div></div>';
-    h+='<div class="rounded-[14px] py-3 px-2 text-center" style="background:rgba(0,0,0,0.3)"><div class="text-xl font-bold text-amber-400">'+dueWeek+'</div><div class="text-[10px] text-gray-500">Due This Week</div></div>';
-    h+='</div></div>';
-  }
-
-  if(rc===0){
-    h+='<div class="text-center py-8"><div class="text-5xl mb-4">\uD83D\uDCCA</div><div class="text-lg font-semibold mb-2">No ratings yet</div><div class="text-gray-400 text-sm">Rate words while studying</div></div>';
-  }else{
-    h+='<div class="grid grid-cols-3 gap-2.5 mb-5">';
-    [{v:rc,l:'Rated',c:'#ef4444'},{v:tw-rc,l:'Remaining',c:'#f59e0b'},{v:Math.round((rc/tw)*100)+'%',l:'Complete',c:'#10b981'}].forEach(function(x){
-      h+='<div class="rounded-[14px] py-3.5 px-2 text-center border border-white/5" style="background:rgba(255,255,255,0.03)"><div class="text-xl font-bold" style="color:'+x.c+'">'+x.v+'</div><div class="text-[11px] text-gray-500 mt-0.5">'+x.l+'</div></div>';
-    });
-    h+='</div><div class="rounded-[18px] p-5 border border-white/[0.08] mb-5" style="background:linear-gradient(145deg,#151a2d,#1b2240)"><div class="text-sm text-gray-400 mb-3.5">Rating Distribution</div>';
-    RATINGS.forEach(function(r){var cnt=Object.values(S.ratings).filter(function(v){return v===r.v}).length;var p=rc>0?(cnt/rc)*100:0;
-      h+='<div class="flex items-center gap-2.5 mb-2"><span class="w-7 text-center text-sm">'+r.icon+'</span><div class="flex-1 h-2.5 bg-gray-800 rounded-lg overflow-hidden"><div class="h-full rounded-lg" style="width:'+p+'%;background:'+r.bg+';transition:width 0.5s"></div></div><span class="text-sm text-gray-400 w-8 text-right">'+cnt+'</span></div>';
-    });
-    h+='<div class="border-t border-white/5 pt-3 mt-3 text-sm text-gray-400">Total: <span class="text-white font-semibold">'+rc+'</span> / '+tw+'</div></div>';
-    h+='<div class="rounded-[18px] p-5 border border-white/[0.08]" style="background:linear-gradient(145deg,#151a2d,#1b2240)"><div class="text-sm text-gray-400 mb-3.5">By Source</div>';
+  // Per source
+  if(S.sources.length){
+    h+='<div style="background:var(--card);border-radius:14px;padding:16px;box-shadow:var(--shadow)">';
+    h+='<div style="font-size:14px;font-weight:700;margin-bottom:10px">By Source</div>';
     S.sources.forEach(function(src){var ids=S.allWords.filter(function(w){return w.sid===src.id}).map(function(w){return w.id});var rated=ids.filter(function(id){return S.ratings[id]!==undefined}).length;var p=ids.length>0?(rated/ids.length)*100:0;
-      h+='<div class="mb-3"><div class="flex justify-between text-sm mb-1"><span>'+esc(src.label)+'</span><span class="text-gray-400">'+rated+'/'+ids.length+'</span></div><div class="h-2 bg-gray-800 rounded-lg overflow-hidden"><div class="h-full rounded-lg" style="width:'+p+'%;background:#ef4444;transition:width 0.5s"></div></div></div>';
+      h+='<div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px"><span>'+esc(src.label)+'</span><span style="color:var(--ink4)">'+rated+'/'+ids.length+'</span></div><div style="height:4px;background:var(--bg2);border-radius:2px;overflow:hidden"><div style="height:100%;border-radius:2px;width:'+p+'%;background:var(--red);transition:width 0.5s"></div></div></div>';
     });
     h+='</div>';
   }
@@ -1064,53 +1099,52 @@ else if(S.screen==='progress'){
 // ═══ SETTINGS ═══
 else if(S.screen==='settings'){
   h+=hdr('Settings');
-  h+='<div class="p-4 pt-5">';
+  h+='<div style="padding:16px 20px">';
 
-  // ── Account ──
-  h+='<div class="rounded-2xl p-5 mb-4 border border-white/[0.06]" style="background:linear-gradient(145deg,#151a2d,#1b2240)">';
-  h+='<div class="text-sm font-semibold text-gray-300 mb-3">\uD83D\uDC64 Account</div>';
-  var dbBadge=dataSource==='supabase'?'<span class="px-2 py-0.5 rounded text-[10px] font-medium" style="background:rgba(16,185,129,0.15);color:#34d399">\uD83D\uDFE2 Live DB</span>':'<span class="px-2 py-0.5 rounded text-[10px] font-medium" style="background:rgba(245,158,11,0.15);color:#fbbf24">\uD83D\uDCE6 Offline</span>';
+  // Account
+  h+='<div style="background:var(--card);border-radius:14px;padding:18px;margin-bottom:12px;box-shadow:var(--shadow);border:1px solid rgba(26,20,16,0.04)">';
+  h+='<div style="font-size:14px;font-weight:700;color:var(--ink2);margin-bottom:12px">\uD83D\uDC64 Account</div>';
+  var dbBadge=dataSource==='supabase'?'<span style="padding:2px 8px;border-radius:6px;font-size:10px;font-weight:600;background:var(--green-soft);color:var(--green)">\uD83D\uDFE2 Live DB</span>':'<span style="padding:2px 8px;border-radius:6px;font-size:10px;font-weight:600;background:var(--gold-soft);color:var(--gold)">\uD83D\uDCE6 Offline</span>';
   if(S.user){
     var userName=S.user.user_metadata&&S.user.user_metadata.full_name?S.user.user_metadata.full_name:'User';
     var userEmail=S.user.email||'';
-    h+='<div class="flex items-center gap-3 mb-3">';
-    h+='<div class="w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold" style="background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff">'+esc(userName.charAt(0))+'</div>';
-    h+='<div><div class="text-sm font-semibold">'+esc(userName)+'</div>';
-    h+='<div class="text-[11px] text-gray-500">'+esc(userEmail)+'</div></div>';
-    h+='<div class="ml-auto">'+dbBadge+'</div></div>';
-    h+='<div class="flex items-center justify-between text-xs text-gray-400 mb-3"><span>\u2601\uFE0F Cloud sync enabled</span></div>';
-    h+='<button onclick="signOut()" class="w-full py-2.5 rounded-xl text-sm font-medium" style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);color:#f87171;cursor:pointer">Sign Out</button>';
+    h+='<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">';
+    h+='<div style="width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;background:var(--red);color:#fff">'+esc(userName.charAt(0))+'</div>';
+    h+='<div style="flex:1"><div style="font-size:14px;font-weight:700">'+esc(userName)+'</div><div style="font-size:11px;color:var(--ink3)">'+esc(userEmail)+'</div></div>';
+    h+='<div>'+dbBadge+'</div></div>';
+    h+='<div style="font-size:11px;color:var(--ink3);margin-bottom:12px">\u2601\uFE0F Cloud sync enabled</div>';
+    h+='<button onclick="signOut()" style="width:100%;padding:10px;border-radius:12px;font-size:13px;font-weight:600;background:var(--red-soft);border:1px solid rgba(194,59,34,0.15);color:var(--red);cursor:pointer">Sign Out</button>';
   }else{
-    h+='<div class="text-center py-2">';
-    h+='<div class="text-xs text-gray-500 mb-3">\uD83D\uDCBE Ratings saved locally. Sign in to sync across devices.</div>';
-    h+='<button onclick="signInGoogle()" class="px-6 py-2.5 rounded-xl text-sm font-medium flex items-center justify-center gap-2 mx-auto" style="background:#fff;border:none;color:#333;cursor:pointer"><svg width="16" height="16" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>Sign in with Google</button>';
-    h+='<div class="mt-2">'+dbBadge+'</div></div>';
+    h+='<div style="text-align:center;padding:8px 0">';
+    h+='<div style="font-size:12px;color:var(--ink3);margin-bottom:12px">\uD83D\uDCBE Ratings saved locally. Sign in to sync.</div>';
+    h+='<button onclick="signInGoogle()" style="padding:10px 24px;border-radius:12px;font-size:13px;font-weight:600;background:var(--ink);color:var(--bg);border:none;cursor:pointer;display:inline-flex;align-items:center;gap:8px"><svg width="14" height="14" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>Sign in with Google</button>';
+    h+='<div style="margin-top:8px">'+dbBadge+'</div></div>';
   }
   h+='</div>';
 
-  // ── SRS Focus Settings ──
-  h+='<div class="rounded-2xl p-5 mb-4 border border-white/[0.06]" style="background:linear-gradient(145deg,#151a2d,#1b2240)">';
-  h+='<div class="text-sm font-semibold text-gray-300 mb-3">\uD83C\uDFAF Focus Mode (SRS)</div>';
-  h+='<div class="flex items-center justify-between mb-3">';
-  h+='<span class="text-xs text-gray-400">Limit words per source using spaced repetition</span>';
-  h+='<button onclick="toggleDaily()" class="px-3 py-1 rounded-full text-[12px] font-semibold" style="border:1px solid '+(S.dailyMode?'rgba(16,185,129,0.4)':'rgba(255,255,255,0.15)')+';background:'+(S.dailyMode?'rgba(16,185,129,0.15)':'transparent')+';color:'+(S.dailyMode?'#34d399':'#6b7280')+';cursor:pointer">'+(S.dailyMode?'ON':'OFF')+'</button>';
+  // Focus Mode
+  h+='<div style="background:var(--card);border-radius:14px;padding:18px;margin-bottom:12px;box-shadow:var(--shadow);border:1px solid rgba(26,20,16,0.04)">';
+  h+='<div style="font-size:14px;font-weight:700;color:var(--ink2);margin-bottom:12px">\uD83C\uDFAF Focus Mode (SRS)</div>';
+  h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">';
+  h+='<span style="font-size:12px;color:var(--ink3)">Limit words per source using spaced repetition</span>';
+  h+='<button onclick="toggleDaily()" style="padding:5px 14px;border-radius:16px;font-size:12px;font-weight:700;border:1px solid '+(S.dailyMode?'var(--green)':'var(--ink4)')+';background:'+(S.dailyMode?'var(--green-soft)':'transparent')+';color:'+(S.dailyMode?'var(--green)':'var(--ink3)')+';cursor:pointer">'+(S.dailyMode?'ON':'OFF')+'</button>';
   h+='</div>';
-  h+='<div class="flex items-center gap-3"><span class="text-xs text-gray-400 whitespace-nowrap">Words/source:</span>';
-  h+='<input type="range" min="5" max="20" value="'+S.dailyLimit+'" oninput="S.dailyLimit=parseInt(this.value);localStorage.setItem(\'hanyu_daily_limit\',S.dailyLimit);this.nextElementSibling.textContent=S.dailyLimit;render()" style="flex:1;accent-color:#ef4444">';
-  h+='<span class="text-sm font-bold text-red-400 w-6 text-center">'+S.dailyLimit+'</span></div>';
-  h+='<div class="text-[10px] text-gray-600 mt-2">SRS intervals: \u2717 1d \u2192 \uD83E\uDD14 4d \u2192 \u270D 6d \u2192 \uD83D\uDCAC 9d \u2192 \u2713 12d</div>';
+  h+='<div style="display:flex;align-items:center;gap:12px"><span style="font-size:12px;color:var(--ink3);white-space:nowrap">Words/source:</span>';
+  h+='<input type="range" min="5" max="20" value="'+S.dailyLimit+'" oninput="S.dailyLimit=parseInt(this.value);localStorage.setItem(\'hanyu_daily_limit\',S.dailyLimit);this.nextElementSibling.textContent=S.dailyLimit;render()" style="flex:1;accent-color:var(--red)">';
+  h+='<span style="font-size:14px;font-weight:700;color:var(--red);width:24px;text-align:center">'+S.dailyLimit+'</span></div>';
+  h+='<div style="font-size:10px;color:var(--ink4);margin-top:8px">SRS: \u2717 1d \u2192 \uD83E\uDD14 4d \u2192 \u270D 6d \u2192 \uD83D\uDCAC 9d \u2192 \u2713 12d</div>';
   h+='</div>';
 
-  // ── Data ──
-  h+='<div class="rounded-2xl p-5 mb-4 border border-white/[0.06]" style="background:linear-gradient(145deg,#151a2d,#1b2240)">';
-  h+='<div class="text-sm font-semibold text-gray-300 mb-3">\uD83D\uDCCA Data</div>';
+  // Data
+  h+='<div style="background:var(--card);border-radius:14px;padding:18px;box-shadow:var(--shadow);border:1px solid rgba(26,20,16,0.04)">';
+  h+='<div style="font-size:14px;font-weight:700;color:var(--ink2);margin-bottom:12px">\uD83D\uDCCA Data</div>';
   var rc=Object.keys(S.ratings).length;
-  h+='<div class="grid grid-cols-3 gap-2 mb-3">';
+  h+='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px">';
   [{v:S.allWords.length,l:'Total Words'},{v:rc,l:'Rated'},{v:S.todayStudied.length,l:'Today'}].forEach(function(x){
-    h+='<div class="rounded-lg py-2 text-center" style="background:rgba(0,0,0,0.3)"><div class="text-base font-bold text-white">'+x.v+'</div><div class="text-[9px] text-gray-500">'+x.l+'</div></div>';
+    h+='<div style="border-radius:10px;padding:10px;text-align:center;background:var(--bg)"><div style="font-size:18px;font-weight:700;color:var(--ink)">'+x.v+'</div><div style="font-size:9px;color:var(--ink4)">'+x.l+'</div></div>';
   });
   h+='</div>';
-  h+='<button onclick="if(confirm(\'Clear all ratings and review data?\u000AThis cannot be undone.\')){S.ratings={};S.reviewData={};S.todayStudied=[];S.practiceDays=[];saveR();render()}" class="w-full py-2 rounded-xl text-xs" style="background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.15);color:#f87171;cursor:pointer">Reset All Progress</button>';
+  h+='<button onclick="if(confirm(\'Clear all ratings and review data?\\nThis cannot be undone.\')){S.ratings={};S.reviewData={};S.todayStudied=[];S.practiceDays=[];saveR();render()}" style="width:100%;padding:10px;border-radius:12px;font-size:12px;background:var(--red-soft);border:1px solid rgba(194,59,34,0.1);color:var(--red);cursor:pointer">Reset All Progress</button>';
   h+='</div>';
 
   h+='</div>';
