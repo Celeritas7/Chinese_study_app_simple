@@ -517,22 +517,40 @@ function useWords(sourceKey) {
 
   useEffect(() => {
     let cancelled = false;
-    async function fetchWords() {
+    async function fetchAllWords() {
       setLoading(true);
       setError(null);
       try {
-        // Fetch all rows — no source filter since that column doesn't exist
-        const { data, error: err } = await supabase
-          .from("chinese_study_app_hanzi_database")
-          .select("*")
-          .order("id", { ascending: true });
-        if (err) throw err;
+        // Supabase caps at 1000 rows per request — fetch in batches
+        let allData = [];
+        let from = 0;
+        const batchSize = 1000;
+        while (true) {
+          const { data, error: err } = await supabase
+            .from("chinese_study_app_hanzi_database")
+            .select("*")
+            .order("id", { ascending: true })
+            .range(from, from + batchSize - 1);
+          if (err) throw err;
+          if (!data || data.length === 0) break;
+          allData = allData.concat(data);
+          if (data.length < batchSize) break;  // last page
+          from += batchSize;
+        }
         if (!cancelled) {
-          const cols = data?.[0] ? Object.keys(data[0]) : [];
-          console.log("✅ Supabase loaded", data?.length, "rows");
+          const cols = allData[0] ? Object.keys(allData[0]) : [];
+          console.log("✅ Supabase loaded", allData.length, "total rows (batched)");
           console.log("📋 Columns:", cols.join(", "));
-          if (data?.[0]) console.log("🔍 Sample row:", JSON.stringify(data[0]).slice(0, 800));
-          setWords((data || []).map(mapRow));
+          if (allData[0]) console.log("🔍 Sample row:", JSON.stringify(allData[0]).slice(0, 800));
+          // Log unique values of potential source columns for debugging
+          const possibleSourceCols = cols.filter(c => 
+            /source|caller|level|book|category|type|group/i.test(c)
+          );
+          possibleSourceCols.forEach(col => {
+            const unique = [...new Set(allData.map(r => r[col]).filter(Boolean))];
+            console.log(`🏷️ Unique "${col}" values:`, unique.slice(0, 20).join(", "));
+          });
+          setWords(allData.map(mapRow));
         }
       } catch (e) {
         console.error("❌ Supabase fetch error:", e);
@@ -541,7 +559,7 @@ function useWords(sourceKey) {
         if (!cancelled) setLoading(false);
       }
     }
-    fetchWords();
+    fetchAllWords();
     return () => { cancelled = true; };
   }, [sourceKey]);
 
@@ -634,10 +652,10 @@ function Home({onSelect,theme,setTheme}){
   useEffect(()=>{
     async function checkDb(){
       try{
-        // Just count total rows to verify connection
-        const {data,error,count}=await supabase
+        // Use head:true with count to get exact total without downloading rows
+        const {count, error}=await supabase
           .from("chinese_study_app_hanzi_database")
-          .select("id", {count:"exact", head:true});
+          .select("*", {count:"exact", head:true});
         if(error)throw error;
         setTotalWords(count || 0);
         setDbStatus("connected");
