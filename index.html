@@ -521,19 +521,21 @@ function useWords(sourceKey) {
       setLoading(true);
       setError(null);
       try {
-        let query = supabase.from("chinese_study_app_hanzi_database").select("*");
-        if (sourceKey) {
-          query = query.eq("source", sourceKey);
-        }
-        const { data, error: err } = await query.order("id", { ascending: true });
+        // Fetch all rows — no source filter since that column doesn't exist
+        const { data, error: err } = await supabase
+          .from("chinese_study_app_hanzi_database")
+          .select("*")
+          .order("id", { ascending: true });
         if (err) throw err;
         if (!cancelled) {
-          console.log("Supabase: loaded", data?.length, "rows. Columns:", data?.[0] ? Object.keys(data[0]) : "none");
-          if (data?.[0]) console.log("Sample row:", JSON.stringify(data[0]).slice(0, 500));
+          const cols = data?.[0] ? Object.keys(data[0]) : [];
+          console.log("✅ Supabase loaded", data?.length, "rows");
+          console.log("📋 Columns:", cols.join(", "));
+          if (data?.[0]) console.log("🔍 Sample row:", JSON.stringify(data[0]).slice(0, 800));
           setWords((data || []).map(mapRow));
         }
       } catch (e) {
-        console.error("Supabase fetch error:", e);
+        console.error("❌ Supabase fetch error:", e);
         if (!cancelled) setError(e.message || "Failed to load words");
       } finally {
         if (!cancelled) setLoading(false);
@@ -627,27 +629,19 @@ function Home({onSelect,theme,setTheme}){
   const [selfOpen,setSelfOpen]=useState(false);
   const [settingsOpen,setSettingsOpen]=useState(false);
   const [dbStatus,setDbStatus]=useState("connecting");
-  const [wordCounts,setWordCounts]=useState({});
   const [totalWords,setTotalWords]=useState(0);
 
   useEffect(()=>{
     async function checkDb(){
       try{
-        // Fetch word counts per source
-        const {data,error}=await supabase.from("chinese_study_app_hanzi_database").select("source",{count:"exact"});
+        // Just count total rows to verify connection
+        const {data,error,count}=await supabase
+          .from("chinese_study_app_hanzi_database")
+          .select("id", {count:"exact", head:true});
         if(error)throw error;
-        // Count per source
-        const counts={};
-        let total=0;
-        (data||[]).forEach(r=>{
-          const s=r.source||"unknown";
-          counts[s]=(counts[s]||0)+1;
-          total++;
-        });
-        setWordCounts(counts);
-        setTotalWords(total);
+        setTotalWords(count || 0);
         setDbStatus("connected");
-        console.log("DB connected. Word counts per source:",counts,"Total:",total);
+        console.log("✅ DB connected. Total rows:",count);
       }catch(e){
         console.warn("DB check failed:",e);
         setDbStatus("error");
@@ -656,16 +650,12 @@ function Home({onSelect,theme,setTheme}){
     checkDb();
   },[]);
 
-  const getCount=(key)=>wordCounts[key]||null;
-
   const renderSrc=(s,i)=>{
-    const realCount=getCount(s.key);
-    const displayCount=realCount!==null?realCount:s.word_count;
     return React.createElement("div",{key:s.id,className:"srw",onClick:()=>onSelect(s)},
     React.createElement("div",{className:"srwi"},s.icon),
     React.createElement("div",{className:"srwf"},
       React.createElement("div",{className:"srwn"},s.label),
-      React.createElement("div",{className:"srwm"},displayCount+" words"+(realCount!==null?" ✓":"")),
+      React.createElement("div",{className:"srwm"},s.word_count+" words"),
       React.createElement("div",{className:"sbar"},React.createElement("div",{className:"sbfl",style:{width:`${20+i*18}%`}}))
     ),
     React.createElement("div",{className:"wc-badge"},s.level),
@@ -737,28 +727,38 @@ function Study({source,onBack}){
   const [jO,setJO]=useState(false);
   const cr=useRef(null);
 
-  // Loading state
-  if (loading) return React.createElement("div",{style:{padding:"60px 20px",textAlign:"center"}},
-    React.createElement("div",{style:{fontSize:40,marginBottom:12}},"⏳"),
-    React.createElement("div",{style:{fontFamily:"'Crimson Pro',serif",fontSize:20,color:"var(--text-muted)"}},"Loading ",source?.label||"words","..."),
-    React.createElement("div",{style:{fontSize:14,color:"var(--text-dim)",marginTop:8}},"Fetching from database")
-  );
-
-  // Error state with fallback
-  const displayWords = (error || W.length === 0) ? W_FALLBACK : W;
+  // All hooks MUST be above this line — no conditional returns before hooks
+  const displayWords = (!loading && (error || W.length === 0)) ? W_FALLBACK : W;
+  const total = displayWords.length || 1;
+  const safeIdx = idx % total;
+  const w = displayWords[safeIdx] || W_FALLBACK[0];
+  const prog = ((safeIdx+1)/total)*100;
   const showError = error && W.length === 0;
 
-  const w=displayWords[idx%displayWords.length],total=displayWords.length,prog=((idx+1)/total)*100;
   const rst=useCallback(()=>{setRating(null);setStep(0);setTO(false);setRO(false);setJO(false);if(cr.current)cr.current()},[]);
   const nxt=()=>{setIdx(i=>Math.min(i+1,total-1));rst()};
   const prv=()=>{setIdx(i=>Math.max(i-1,0));rst()};
-  const shf=()=>{let n;do{n=Math.floor(Math.random()*total)}while(n===idx&&total>1);setIdx(n);rst()};
+  const shf=()=>{let n;do{n=Math.floor(Math.random()*total)}while(n===safeIdx&&total>1);setIdx(n);rst()};
   const tap=()=>{if(step<4)setStep(s=>s+1)};
 
   const handleRate=(val)=>{
     setRating(val);
     saveRating(w.id, val);
   };
+
+  // Loading state — rendered AFTER all hooks
+  if (loading) return React.createElement("div",{style:{paddingBottom:120}},
+    React.createElement("div",{className:"shdr"},
+      React.createElement("button",{className:"bbk",onClick:onBack},"← Back"),
+      React.createElement("div",{className:"sbdg"},React.createElement("span",{className:"ltg"},source.level),React.createElement("div",{className:"si"},React.createElement("div",{className:"snm"},source.label),React.createElement("div",{className:"scn"},"Loading..."))),
+      React.createElement("button",{className:"sgr"},"⚙")
+    ),
+    React.createElement("div",{style:{padding:"60px 20px",textAlign:"center"}},
+      React.createElement("div",{style:{fontSize:40,marginBottom:12}},"⏳"),
+      React.createElement("div",{style:{fontFamily:"'Crimson Pro',serif",fontSize:20,color:"var(--text-muted)"}},"Loading ",source?.label||"words","..."),
+      React.createElement("div",{style:{fontSize:14,color:"var(--text-dim)",marginTop:8}},"Fetching from database")
+    )
+  );
 
   const inl=()=>{const p=w.sn.split(w.hz);return p.map((x,i)=>React.createElement("span",{key:i},x,i<p.length-1&&React.createElement("span",{className:"tg"},w.hz)))};
   const bln=(cls)=>{const p=w.sn.split(w.hz);return React.createElement("div",{className:cls},p.map((x,i)=>React.createElement("span",{key:i},x,i<p.length-1&&React.createElement("span",{className:"bk"}," "))))};
@@ -822,7 +822,7 @@ function Study({source,onBack}){
       "⚠ Could not load from database: ",error,". Showing sample data."),
     React.createElement("div",{className:"shdr"},
       React.createElement("button",{className:"bbk",onClick:onBack},"← Back"),
-      React.createElement("div",{className:"sbdg"},React.createElement("span",{className:"ltg"},source.level),React.createElement("div",{className:"si"},React.createElement("div",{className:"snm"},source.label),React.createElement("div",{className:"scn"},(idx+1)+" / "+total))),
+      React.createElement("div",{className:"sbdg"},React.createElement("span",{className:"ltg"},source.level),React.createElement("div",{className:"si"},React.createElement("div",{className:"snm"},source.label),React.createElement("div",{className:"scn"},(safeIdx+1)+" / "+total))),
       React.createElement("button",{className:"sgr"},"⚙")
     ),
     React.createElement("div",{className:"mtbs"},MODES.map(m=>React.createElement("button",{key:m.key,className:`mtb ${mode===m.key?"on":""}`,onClick:()=>{setMode(m.key);rst()}},m.label))),
