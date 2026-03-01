@@ -454,14 +454,8 @@ body{font-family:'Noto Sans',sans-serif;background:var(--bg);color:var(--text);-
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script type="text/babel">
 const {useState,useCallback,useRef,useEffect} = React;
-
-// ═══ SUPABASE CONFIG ═══
-const SUPABASE_URL = "https://ulgrfumbwjovbjzjiems.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVsZ3JmdW1id2pvdmJqemppZW1zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjczNzIyNjcsImV4cCI6MjA4Mjk0ODI2N30.ix5Vh4Y3GXNbQbzVtTD_WSko0L3cr5q_eCnTuDEMh7M";
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 const CLASS_SOURCES=[{id:1,key:"HSK_1",label:"HSK 1",icon:"📘",word_count:273,level:"H1"}];
 const SELF_SOURCES=[
@@ -471,100 +465,15 @@ const SELF_SOURCES=[
   {id:5,key:"kg_numbers",label:"KG Numbers",icon:"🔢",word_count:78,level:"KN"},
 ];
 
-// ═══ COLUMN MAPPING: Supabase → App format ═══
-function mapRow(r) {
-  return {
-    id: r.id || r.sr_no || r["Sr. No."] || 0,
-    hz: r.hanzi || r.kanji || r.Hanzi || r.Kanji || r.hanji || "?",
-    py: r.pinyin || r.Pinyin || "",
-    t: r.tone || r.tone_number || guessTone(r.pinyin || r.Pinyin || ""),
-    mr: r.marathi || r.Marathi || "",
-    mn: r.meaning || r.Meaning || r.english || "",
-    rad: r.radical || r.Radical || "",
-    rl: r.radical_meaning || r.radical_label || "",
-    sc: r.stroke_count || r["Stroke count"] || 0,
-    hsk: r.hsk_level || r["HSK level"] || r.hsk || 1,
-    fr: r.frequency_rank || r["Frequency rank"] || 0,
-    jp: r.hint_japanese || r["Hint/ Japanese kanji"] || r.japanese_hint || "",
-    jk: r.japanese_kanji || r.jp_kanji || r.hanzi || r.Hanzi || "",
-    jr: r.japanese_reading || r.jp_reading || "",
-    sim: r.similarity || r.jp_similarity || "none",
-    sn: r.sentence || r.Sentence || r.example_sentence || "",
-    sp: r.sentence_pinyin || "",
-    sm: r.sentence_meaning || r.sentence_english || "",
-    sg: r.sorting_group || r.group_name || r.category || "",
-    tr: r.tone_rule || r.tone_sandhi || null,
-    ht: r.hint || r.Hint || r.learning_hint || "",
-    source: r.source || r.Source || "",
-  };
-}
-
-function guessTone(py) {
-  if (!py) return 5;
-  const s = py.normalize("NFD");
-  if (/\u0304/.test(s)) return 1;
-  if (/\u0301/.test(s)) return 2;
-  if (/\u030C/.test(s)) return 3;
-  if (/\u0300/.test(s)) return 4;
-  return 5;
-}
-
-// ═══ DATA FETCHING HOOK ═══
-function useWords(sourceKey) {
-  const [words, setWords] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    async function fetchWords() {
-      setLoading(true);
-      setError(null);
-      try {
-        let query = supabase.from("chinese_study_app_hanzi_database").select("*");
-        if (sourceKey) {
-          query = query.eq("source", sourceKey);
-        }
-        const { data, error: err } = await query.order("id", { ascending: true });
-        if (err) throw err;
-        if (!cancelled) {
-          console.log("Supabase: loaded", data?.length, "rows. Columns:", data?.[0] ? Object.keys(data[0]) : "none");
-          if (data?.[0]) console.log("Sample row:", JSON.stringify(data[0]).slice(0, 500));
-          setWords((data || []).map(mapRow));
-        }
-      } catch (e) {
-        console.error("Supabase fetch error:", e);
-        if (!cancelled) setError(e.message || "Failed to load words");
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    }
-    fetchWords();
-    return () => { cancelled = true; };
-  }, [sourceKey]);
-
-  return { words, loading, error };
-}
-
-// ═══ RATING PERSISTENCE ═══
-async function saveRating(wordId, ratingValue) {
-  try {
-    const { error } = await supabase
-      .from("chinese_study_app_user_word_ratings")
-      .upsert({ word_id: wordId, rating: ratingValue, rated_at: new Date().toISOString() }, { onConflict: "word_id" });
-    if (error) console.warn("Rating save error:", error);
-  } catch (e) {
-    console.warn("Rating save failed:", e);
-  }
-}
-
-// ═══ FALLBACK SAMPLE DATA (only if Supabase fails) ═══
-const W_FALLBACK=[
+const W=[
   {id:1,hz:"学",py:"xué",t:2,mr:"श्युए",mn:"to study, to learn",rad:"子",rl:"child",sc:8,hsk:1,fr:66,jp:"学 (がく/まなぶ) — same character, same meaning",jk:"学",jr:"がく / まなぶ",sim:"same",sn:"我每天都在学中文。",sp:"Wǒ měi tiān dōu zài xué zhōngwén.",sm:"I study Chinese every day.",sg:"Education",tr:null,ht:"Related to education and knowledge acquisition"},
   {id:2,hz:"大",py:"dà",t:4,mr:"दा`",mn:"big, large, great",rad:"大",rl:"big",sc:3,hsk:1,fr:14,jp:"大 (だい/おおきい) — identical character",jk:"大",jr:"だい / おおきい",sim:"same",sn:"这个苹果很大。",sp:"Zhège píngguǒ hěn dà.",sm:"This apple is very big.",sg:"Size & Shape",tr:null,ht:"Describes physical size, also used figuratively"},
   {id:3,hz:"说",py:"shuō",t:1,mr:"षुओ-",mn:"to speak, to say",rad:"讠",rl:"speech",sc:9,hsk:1,fr:24,jp:"説 (せつ) — simplified form in Chinese",jk:"説",jr:"せつ / とく",sim:"simplified",sn:"请你说慢一点。",sp:"Qǐng nǐ shuō màn yìdiǎn.",sm:"Please speak a little slower.",sg:"Communication",tr:null,ht:"Uses the speech radical 讠on the left side"},
   {id:4,hz:"好",py:"hǎo",t:3,mr:"हाव`",mn:"good, well, fine",rad:"女",rl:"woman",sc:6,hsk:1,fr:37,jp:"好 (こう/すき) — same character, affinity meaning",jk:"好",jr:"こう / すき",sim:"same",sn:"你好吗？",sp:"Nǐ hǎo ma?",sm:"How are you?",sg:"Common Adjectives",tr:"3rd + 3rd → 2nd + 3rd: ní hǎo",ht:"Combines 女 (woman) + 子 (child) = good"},
   {id:5,hz:"不",py:"bù",t:4,mr:"बु`",mn:"not, no (negation)",rad:"一",rl:"one",sc:4,hsk:1,fr:4,jp:"不 (ふ/ぶ) — identical, negation prefix",jk:"不",jr:"ふ / ぶ",sim:"same",sn:"我不知道。",sp:"Wǒ bù zhīdào.",sm:"I don't know.",sg:"Grammar Particles",tr:"不 before 4th tone → bú shì",ht:"Most common negation word in Chinese"},
+  {id:6,hz:"吃",py:"chī",t:1,mr:"ची-",mn:"to eat",rad:"口",rl:"mouth",sc:6,hsk:1,fr:495,jp:"No direct kanji equivalent",jk:"—",jr:"—",sim:"none",sn:"你想吃什么？",sp:"Nǐ xiǎng chī shénme?",sm:"What do you want to eat?",sg:"Daily Life",tr:null,ht:"Has the mouth radical 口 — related to eating"},
+  {id:7,hz:"写",py:"xiě",t:3,mr:"श्ये`",mn:"to write",rad:"冖",rl:"cover",sc:5,hsk:1,fr:382,jp:"書 (しょ/かく) — different character in JP",jk:"書",jr:"しょ / かく",sim:"different",sn:"我在写汉字。",sp:"Wǒ zài xiě hànzì.",sm:"I am writing Chinese characters.",sg:"Education",tr:null,ht:"Simplified from traditional 寫"},
+  {id:8,hz:"人",py:"rén",t:2,mr:"रन्",mn:"person, people",rad:"人",rl:"person",sc:2,hsk:1,fr:7,jp:"人 (じん/ひと) — identical character",jk:"人",jr:"じん / ひと",sim:"same",sn:"那个人是我的老师。",sp:"Nàge rén shì wǒ de lǎoshī.",sm:"That person is my teacher.",sg:"People",tr:null,ht:"One of the simplest and most common characters"},
 ];
 
 const TC={1:"#ff4444",2:"#44bb44",3:"#4488ff",4:"#aa44ff",5:"#999"};
@@ -626,51 +535,17 @@ function Home({onSelect,theme,setTheme}){
   const [classOpen,setClassOpen]=useState(false);
   const [selfOpen,setSelfOpen]=useState(false);
   const [settingsOpen,setSettingsOpen]=useState(false);
-  const [dbStatus,setDbStatus]=useState("connecting");
-  const [wordCounts,setWordCounts]=useState({});
-  const [totalWords,setTotalWords]=useState(0);
 
-  useEffect(()=>{
-    async function checkDb(){
-      try{
-        // Fetch word counts per source
-        const {data,error}=await supabase.from("chinese_study_app_hanzi_database").select("source",{count:"exact"});
-        if(error)throw error;
-        // Count per source
-        const counts={};
-        let total=0;
-        (data||[]).forEach(r=>{
-          const s=r.source||"unknown";
-          counts[s]=(counts[s]||0)+1;
-          total++;
-        });
-        setWordCounts(counts);
-        setTotalWords(total);
-        setDbStatus("connected");
-        console.log("DB connected. Word counts per source:",counts,"Total:",total);
-      }catch(e){
-        console.warn("DB check failed:",e);
-        setDbStatus("error");
-      }
-    }
-    checkDb();
-  },[]);
-
-  const getCount=(key)=>wordCounts[key]||null;
-
-  const renderSrc=(s,i)=>{
-    const realCount=getCount(s.key);
-    const displayCount=realCount!==null?realCount:s.word_count;
-    return React.createElement("div",{key:s.id,className:"srw",onClick:()=>onSelect(s)},
+  const renderSrc=(s,i)=>React.createElement("div",{key:s.id,className:"srw",onClick:()=>onSelect(s)},
     React.createElement("div",{className:"srwi"},s.icon),
     React.createElement("div",{className:"srwf"},
       React.createElement("div",{className:"srwn"},s.label),
-      React.createElement("div",{className:"srwm"},displayCount+" words"+(realCount!==null?" ✓":"")),
+      React.createElement("div",{className:"srwm"},s.word_count+" words"),
       React.createElement("div",{className:"sbar"},React.createElement("div",{className:"sbfl",style:{width:`${20+i*18}%`}}))
     ),
     React.createElement("div",{className:"wc-badge"},s.level),
     React.createElement("div",{className:"srwa"},"›")
-  );};
+  );
 
   return React.createElement("div",{className:"hm"},
     React.createElement("div",{style:{display:"flex",justifyContent:"flex-end",marginBottom:16}},
@@ -678,12 +553,8 @@ function Home({onSelect,theme,setTheme}){
     ),
     settingsOpen && React.createElement("div",{className:"sp fup"},
       React.createElement("div",{className:"sp-title"},"📊 Stats"),
-      React.createElement("div",{style:{display:"flex",alignItems:"center",gap:8,marginBottom:10,fontSize:12,color:dbStatus==="connected"?"var(--green)":dbStatus==="error"?"var(--accent)":"var(--text-dim)"}},
-        dbStatus==="connected"?"🟢 Database connected · "+totalWords+" total words":
-        dbStatus==="error"?"🔴 Database offline · showing cached counts":
-        "🟡 Connecting to database..."),
       React.createElement("div",{className:"hsts"},
-        [{v:totalWords>0?totalWords.toLocaleString():"1,935",l:"Total Words",c:"var(--text)"},{v:"342",l:"Rated",c:"var(--green)"},{v:"7",l:"Day Streak",c:"var(--accent)"},{v:"12",l:"Sessions",c:"#e8b931"}].map((s,i)=>
+        [{v:"1,935",l:"Total Words",c:"var(--text)"},{v:"342",l:"Rated",c:"var(--green)"},{v:"7",l:"Day Streak",c:"var(--accent)"},{v:"12",l:"Sessions",c:"#e8b931"}].map((s,i)=>
           React.createElement("div",{key:i,className:"hstc"},
             React.createElement("div",{className:"hstv",style:{color:s.c}},s.v),
             React.createElement("div",{className:"hstl"},s.l)
@@ -727,7 +598,6 @@ function Home({onSelect,theme,setTheme}){
 }
 
 function Study({source,onBack}){
-  const {words:W, loading, error} = useWords(source?.key || null);
   const [idx,setIdx]=useState(0);
   const [mode,setMode]=useState("hanzi");
   const [rating,setRating]=useState(null);
@@ -736,29 +606,12 @@ function Study({source,onBack}){
   const [rO,setRO]=useState(false);
   const [jO,setJO]=useState(false);
   const cr=useRef(null);
-
-  // Loading state
-  if (loading) return React.createElement("div",{style:{padding:"60px 20px",textAlign:"center"}},
-    React.createElement("div",{style:{fontSize:40,marginBottom:12}},"⏳"),
-    React.createElement("div",{style:{fontFamily:"'Crimson Pro',serif",fontSize:20,color:"var(--text-muted)"}},"Loading ",source?.label||"words","..."),
-    React.createElement("div",{style:{fontSize:14,color:"var(--text-dim)",marginTop:8}},"Fetching from database")
-  );
-
-  // Error state with fallback
-  const displayWords = (error || W.length === 0) ? W_FALLBACK : W;
-  const showError = error && W.length === 0;
-
-  const w=displayWords[idx%displayWords.length],total=displayWords.length,prog=((idx+1)/total)*100;
+  const w=W[idx%W.length],total=W.length,prog=((idx+1)/total)*100;
   const rst=useCallback(()=>{setRating(null);setStep(0);setTO(false);setRO(false);setJO(false);if(cr.current)cr.current()},[]);
   const nxt=()=>{setIdx(i=>Math.min(i+1,total-1));rst()};
   const prv=()=>{setIdx(i=>Math.max(i-1,0));rst()};
   const shf=()=>{let n;do{n=Math.floor(Math.random()*total)}while(n===idx&&total>1);setIdx(n);rst()};
   const tap=()=>{if(step<4)setStep(s=>s+1)};
-
-  const handleRate=(val)=>{
-    setRating(val);
-    saveRating(w.id, val);
-  };
 
   const inl=()=>{const p=w.sn.split(w.hz);return p.map((x,i)=>React.createElement("span",{key:i},x,i<p.length-1&&React.createElement("span",{className:"tg"},w.hz)))};
   const bln=(cls)=>{const p=w.sn.split(w.hz);return React.createElement("div",{className:cls},p.map((x,i)=>React.createElement("span",{key:i},x,i<p.length-1&&React.createElement("span",{className:"bk"}," "))))};
@@ -818,8 +671,6 @@ function Study({source,onBack}){
   );
 
   return React.createElement("div",{style:{paddingBottom:120}},
-    showError && React.createElement("div",{style:{background:"#ff444420",borderBottom:"1px solid #ff444444",padding:"8px 16px",textAlign:"center",fontSize:13,color:"var(--accent)"}},
-      "⚠ Could not load from database: ",error,". Showing sample data."),
     React.createElement("div",{className:"shdr"},
       React.createElement("button",{className:"bbk",onClick:onBack},"← Back"),
       React.createElement("div",{className:"sbdg"},React.createElement("span",{className:"ltg"},source.level),React.createElement("div",{className:"si"},React.createElement("div",{className:"snm"},source.label),React.createElement("div",{className:"scn"},(idx+1)+" / "+total))),
@@ -842,7 +693,7 @@ function Study({source,onBack}){
             React.createElement("div",{className:"rdd"},"Group: "+w.sg))))),
       React.createElement("div",{className:"rsc fup",style:{animationDelay:"320ms"}},
         React.createElement("div",{className:"rtt"},"Change Rating"),
-        React.createElement("div",{className:"rrw"},RI.map((ic,i)=>React.createElement("button",{key:i,className:`rrb ${rating===i?"se":""}`,onClick:()=>handleRate(i),style:rating===i?{borderColor:RC[i],boxShadow:`0 0 14px ${RC[i]}33`,background:`${RC[i]}15`}:{}},ic,React.createElement("span",{className:"tip"},RL[i])))))
+        React.createElement("div",{className:"rrw"},RI.map((ic,i)=>React.createElement("button",{key:i,className:`rrb ${rating===i?"se":""}`,onClick:()=>setRating(i),style:rating===i?{borderColor:RC[i],boxShadow:`0 0 14px ${RC[i]}33`,background:`${RC[i]}15`}:{}},ic,React.createElement("span",{className:"tip"},RL[i])))))
     ),
     React.createElement("div",{className:"bb"},
       React.createElement("div",{className:"btr"},React.createElement("div",{className:"bfl",style:{width:`${prog}%`}})),
