@@ -244,6 +244,16 @@ body{font-family:'Noto Sans',sans-serif;background:var(--bg);color:var(--text);-
 @keyframes cardInR{from{opacity:0;transform:translateX(32px)}to{opacity:1;transform:none}}
 @keyframes cardInL{from{opacity:0;transform:translateX(-32px)}to{opacity:1;transform:none}}
 
+/* APP COLUMN — phone-sized on any screen (matches JP app max-w-md ≈ 448px) */
+#app{max-width:448px;margin:0 auto;min-height:100vh;border-left:1px solid var(--border);border-right:1px solid var(--border)}
+@media(max-width:640px){#app{border-left:0;border-right:0}}
+
+/* BOTTOM TAB RAIL */
+.brail{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:448px;z-index:110;display:grid;grid-template-columns:repeat(5,1fr);background:var(--bg-card);border-top:1px solid var(--border);padding-bottom:env(safe-area-inset-bottom,0px);transition:background .4s,border .4s}
+.bri{display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 6px 12px;border:none;background:transparent;color:var(--text-dim);font-size:11px;font-family:'Noto Sans',sans-serif;font-weight:500;cursor:pointer;transition:color .2s}
+.bri.on{color:var(--accent);font-weight:600}
+.brg{font-size:19px;line-height:1;font-family:'Noto Serif SC',serif;font-weight:600}
+
 /* NAV */
 .tnav{display:grid;grid-template-columns:repeat(4,1fr);border-bottom:2px solid var(--border);background:var(--bg-card);transition:all .4s}
 .tni{display:flex;flex-direction:column;align-items:center;gap:4px;padding:12px 8px 10px;cursor:pointer;border:none;background:0;color:var(--text-dim);font-size:12px;font-family:'Noto Sans',sans-serif;font-weight:500;transition:all .2s;border-bottom:3px solid transparent}
@@ -346,7 +356,7 @@ body{font-family:'Noto Sans',sans-serif;background:var(--bg);color:var(--text);-
 .rrb:hover .tip{opacity:1}
 
 /* BOTTOM */
-.bb{position:fixed;bottom:0;left:0;right:0;background:var(--bg-card);border-top:2px solid var(--border);z-index:100;transition:all .4s}
+.bb{position:fixed;bottom:57px;left:50%;transform:translateX(-50%);width:100%;max-width:448px;background:var(--bg-card);border-top:2px solid var(--border);z-index:100;transition:background .4s,border .4s}
 .btr{height:4px;background:var(--bg-card-hover)}
 .bfl{height:100%;background:linear-gradient(90deg,var(--accent),var(--green));transition:width .4s ease}
 .bbs{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;padding:12px 20px 16px;max-width:720px;margin:0 auto}
@@ -672,31 +682,9 @@ function JpModal({w,onClose}){
   );
 }
 
-function Home({onSelect,theme,setTheme}){
+function Home({onSelect}){
   const [classOpen,setClassOpen]=useState(false);
   const [selfOpen,setSelfOpen]=useState(false);
-  const [settingsOpen,setSettingsOpen]=useState(false);
-  const [dbStatus,setDbStatus]=useState("connecting");
-  const [totalWords,setTotalWords]=useState(0);
-
-  useEffect(()=>{
-    async function checkDb(){
-      try{
-        // Use head:true with count to get exact total without downloading rows
-        const {count, error}=await supabase
-          .from("chinese_study_app_hanzi_database")
-          .select("*", {count:"exact", head:true});
-        if(error)throw error;
-        setTotalWords(count || 0);
-        setDbStatus("connected");
-        console.log("✅ DB connected. Total rows:",count);
-      }catch(e){
-        console.warn("DB check failed:",e);
-        setDbStatus("error");
-      }
-    }
-    checkDb();
-  },[]);
 
   const renderSrc=(s,i)=>{
     return React.createElement("div",{key:s.id,className:"srw",onClick:()=>onSelect(s)},
@@ -711,30 +699,6 @@ function Home({onSelect,theme,setTheme}){
   );};
 
   return React.createElement("div",{className:"hm"},
-    React.createElement("div",{style:{display:"flex",justifyContent:"flex-end",marginBottom:16}},
-      React.createElement("button",{className:"sgr fup",onClick:()=>setSettingsOpen(o=>!o),style:{width:40,height:40}},IC.gear(18))
-    ),
-    settingsOpen && React.createElement("div",{className:"sp fup"},
-      React.createElement("div",{className:"sp-title"},"Stats"),
-      React.createElement("div",{style:{display:"flex",alignItems:"center",gap:8,marginBottom:10,fontSize:12,color:dbStatus==="connected"?"var(--green)":dbStatus==="error"?"var(--accent)":"var(--text-dim)"}},
-        dbStatus==="connected"?"● Database connected · "+totalWords+" total words":
-        dbStatus==="error"?"● Database offline · showing cached counts":
-        "● Connecting to database..."),
-      React.createElement("div",{className:"hsts"},
-        [{v:totalWords>0?totalWords.toLocaleString():"1,935",l:"Total Words",c:"var(--text)"},{v:"342",l:"Rated",c:"var(--green)"},{v:"7",l:"Day Streak",c:"var(--accent)"},{v:"12",l:"Sessions",c:"#e8b931"}].map((s,i)=>
-          React.createElement("div",{key:i,className:"hstc"},
-            React.createElement("div",{className:"hstv",style:{color:s.c}},s.v),
-            React.createElement("div",{className:"hstl"},s.l)
-          ))
-      ),
-      React.createElement("div",{className:"sp-title",style:{marginTop:16}},"Theme"),
-      React.createElement("div",{className:"th-row"},
-        THEMES.map(t=>React.createElement("div",{key:t.key,style:{textAlign:"center"}},
-          React.createElement("div",{className:`th-btn ${t.cls} ${theme===t.key?"on":""}`,onClick:()=>setTheme(t.key)}),
-          React.createElement("div",{className:"th-label"},t.label)
-        ))
-      )
-    ),
     React.createElement("div",{className:"cat-block fup",style:{animationDelay:"50ms"}},
       React.createElement("div",{className:`cat-hdr ${classOpen?"exp":""}`,onClick:()=>setClassOpen(o=>!o)},
         React.createElement("div",{className:"cat-icon cls"},"课"),
@@ -941,27 +905,143 @@ function SRS({onStudy}){
   );
 }
 
+// ═══ TODAY'S FOCUS (home landing) ═══
+const FOCUS_ROT=[
+  {key:"hanzi",glyph:"汉",title:"Hanzi practice",subtitle:"HSK 1 · Chapter 7",meta:"8 new characters",completed:"Vocabulary completed today"},
+  {key:"vocab",glyph:"词",title:"Vocabulary review",subtitle:"Mimi Tan Stories · Set 3",meta:"24 words due",completed:"Hanzi completed today"},
+  {key:"tones",glyph:"声",title:"Tone drill",subtitle:"Tone pairs · Sandhi rules",meta:"12 tone pairs",completed:"Reading completed today"},
+  {key:"read",glyph:"读",title:"Reading comprehension",subtitle:"KG Book · Story 2",meta:"3 passages",completed:"Tone drill completed today"},
+  {key:"bridge",glyph:"橋",title:"Japanese Bridge",subtitle:"Hanzi ↔ Kanji comparison",meta:"5 word pairs",completed:"Writing completed today"},
+];
+const todayFocus=()=>{const n=new Date(),s=new Date(n.getFullYear(),0,0);return FOCUS_ROT[Math.floor((n-s)/864e5)%FOCUS_ROT.length]};
+const WM_GLYPHS=[{c:"汉",t:"4%",l:"52%",s:240,r:-8,o:.06},{c:"语",t:"30%",l:"70%",s:180,r:6,o:.05},{c:"习",t:"62%",l:"60%",s:200,r:-4,o:.055},{c:"字",t:"8%",l:"6%",s:150,r:10,o:.04},{c:"文",t:"74%",l:"4%",s:130,r:-6,o:.04}];
+
+function HomeFocus({onStart,onStats}){
+  const f=todayFocus();
+  return React.createElement("div",{style:{position:"relative",minHeight:"calc(100vh - 57px)",overflow:"hidden"}},
+    React.createElement("div",{style:{position:"absolute",inset:0,overflow:"hidden",pointerEvents:"none",zIndex:0}},
+      React.createElement("div",{style:{position:"absolute",inset:0,background:"radial-gradient(120% 80% at 70% 22%,color-mix(in srgb,var(--accent) 16%,transparent),transparent 60%)"}}),
+      WM_GLYPHS.map((g,i)=>React.createElement("div",{key:i,style:{position:"absolute",top:g.t,left:g.l,fontFamily:"'Noto Serif SC',serif",fontWeight:700,fontSize:g.s,color:"var(--accent)",opacity:g.o,transform:"rotate("+g.r+"deg)",lineHeight:1}},g.c))),
+    React.createElement("div",{style:{position:"relative",zIndex:1}},
+      React.createElement("div",{style:{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"14px 16px",gap:10}},
+        React.createElement("div",{style:{display:"flex",alignItems:"center",gap:12,minWidth:0}},
+          React.createElement("div",{style:{width:42,height:42,borderRadius:12,flexShrink:0,background:"var(--cat-slf)",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Noto Serif SC',serif",fontSize:22,fontWeight:700,color:"#fff"}},"学"),
+          React.createElement("div",{style:{fontFamily:"'Crimson Pro',serif",fontSize:21,fontWeight:700,color:"var(--text)",whiteSpace:"nowrap"}},"Chinese Study")),
+        React.createElement("div",{style:{display:"flex",alignItems:"center",gap:8,flexShrink:0}},
+          React.createElement("button",{onClick:onStats,style:{display:"inline-flex",alignItems:"center",gap:6,padding:"7px 13px",borderRadius:10,border:"1px solid var(--border)",background:"var(--bg-card-hover)",color:"var(--text)",cursor:"pointer",fontFamily:"'Noto Sans',sans-serif",fontSize:13,fontWeight:600}},"Stats"),
+          React.createElement("button",{onClick:onStats,"aria-label":"Settings",style:{width:34,height:34,display:"flex",alignItems:"center",justifyContent:"center",border:"none",background:"transparent",color:"var(--accent)",cursor:"pointer",borderRadius:8}},IC.gear(18)))),
+      React.createElement("div",{style:{padding:"8px 24px 24px"}},
+        React.createElement("div",{style:{display:"flex",alignItems:"center",gap:6,color:"var(--green)",fontSize:14,marginBottom:18}},"✓ ",f.completed),
+        React.createElement("div",{style:{width:124,height:124,borderRadius:18,marginBottom:26,background:"linear-gradient(150deg,color-mix(in srgb,var(--accent) 38%,transparent),color-mix(in srgb,var(--accent) 14%,transparent))",border:"1px solid color-mix(in srgb,var(--accent) 30%,transparent)",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Noto Serif SC',serif",fontSize:60,fontWeight:700,color:"var(--accent)",boxShadow:"0 8px 32px color-mix(in srgb,var(--accent) 18%,transparent)"}},f.glyph),
+        React.createElement("div",{style:{color:"var(--accent)",fontSize:13,fontWeight:700,textTransform:"uppercase",letterSpacing:".14em",marginBottom:8}},"Today's Focus"),
+        React.createElement("div",{style:{fontFamily:"'Crimson Pro',serif",fontSize:44,fontWeight:700,color:"var(--text)",lineHeight:1.05,marginBottom:14}},f.title),
+        React.createElement("div",{style:{fontSize:18,color:"var(--text)",marginBottom:6}},f.subtitle),
+        React.createElement("div",{style:{fontSize:14,color:"var(--text-dim)"}},f.meta),
+        React.createElement("div",{style:{display:"flex",alignItems:"center",gap:22,marginTop:32}},
+          React.createElement("button",{onClick:()=>onStart(f),"aria-label":"Start practice",style:{width:64,height:64,borderRadius:"50%",border:"none",cursor:"pointer",background:"var(--accent)",color:"#fff",fontSize:22,display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 8px 28px color-mix(in srgb,var(--accent) 45%,transparent)"}},"▶"),
+          React.createElement("span",{style:{fontSize:18,fontWeight:700,color:"var(--text)"}},"Start practice")))));
+}
+
+// ═══ JAPANESE BRIDGE TAB ═══
+const BSIM={same:{bg:"rgba(34,197,94,.15)",c:"#4ade80",label:"same character"},simplified:{bg:"rgba(250,204,21,.15)",c:"#fbbf24",label:"simplified in Chinese"},different:{bg:"rgba(239,68,68,.15)",c:"#f87171",label:"different character"},none:{bg:"rgba(156,163,175,.15)",c:"#9ca3af",label:"no kanji equivalent"}};
+function Bridge(){
+  const W=W_FALLBACK;
+  const [idx,setIdx]=useState(0);
+  const [dir,setDir]=useState("r");
+  const total=W.length,w=W[idx],sc=BSIM[w.sim]||BSIM.none;
+  const counts=W.reduce((a,x)=>{a[x.sim]=(a[x.sim]||0)+1;return a},{});
+  return React.createElement("div",{style:{paddingBottom:150}},
+    React.createElement("div",{style:{padding:"18px 20px 4px"}},
+      React.createElement("div",{style:{display:"flex",alignItems:"center",gap:10}},
+        React.createElement("div",{style:{fontFamily:"'Noto Serif SC',serif",fontSize:26,fontWeight:700,color:"var(--purple)"}},"橋"),
+        React.createElement("div",null,
+          React.createElement("div",{style:{fontFamily:"'Crimson Pro',serif",fontSize:22,fontWeight:700,color:"var(--text)"}},"Japanese Bridge"),
+          React.createElement("div",{style:{fontSize:13,color:"var(--text-dim)"}},"How your hanzi map to Japanese kanji")),
+        React.createElement("div",{style:{marginLeft:"auto",fontSize:12,color:"var(--text-dim)"}},(idx+1)+" / "+total)),
+      React.createElement("div",{style:{display:"flex",gap:8,margin:"14px 0 12px",flexWrap:"wrap"}},
+        React.createElement("span",{className:"wc-badge",style:{color:"var(--green)"}},(counts.same||0)+" same"),
+        React.createElement("span",{className:"wc-badge",style:{color:"var(--accent)"}},(counts.simplified||0)+" simplified"),
+        React.createElement("span",{className:"wc-badge"},(counts.different||0)+" different"))),
+    React.createElement("div",{key:idx,style:{padding:"0 16px",animation:(dir==="l"?"cardInL":"cardInR")+" .22s ease-out both"}},
+      React.createElement("div",{style:{background:"var(--jp-modal-bg)",border:"1.5px solid var(--jp-modal-border)",borderRadius:18,padding:"24px 20px"}},
+        React.createElement("div",{style:{display:"flex",alignItems:"center",justifyContent:"center",gap:28,marginBottom:18}},
+          React.createElement("div",{style:{textAlign:"center"}},
+            React.createElement("div",{className:"jclb"},"Chinese"),
+            React.createElement("div",{style:{fontFamily:"'Noto Serif SC',serif",fontSize:56,fontWeight:600,color:"var(--accent)",lineHeight:1}},w.hz),
+            React.createElement("div",{className:"hc-py",style:{color:TC[w.t],fontSize:20,marginTop:8}},w.py)),
+          React.createElement("div",{className:"jarr",style:{marginTop:0}},"⟷"),
+          React.createElement("div",{style:{textAlign:"center"}},
+            React.createElement("div",{className:"jclb"},"Japanese"),
+            React.createElement("div",{style:{fontFamily:"'Noto Serif SC',serif",fontSize:56,fontWeight:600,color:"#c4b5fd",lineHeight:1}},w.jk),
+            React.createElement("div",{style:{marginTop:8,fontSize:15,color:"#ddd6fe",fontStyle:"italic"}},w.jr))),
+        React.createElement("div",{style:{borderTop:"1px solid rgba(139,92,246,.2)",paddingTop:14,textAlign:"center"}},
+          React.createElement("div",{style:{fontFamily:"'Crimson Pro',serif",fontSize:18,color:"var(--jp-text)",marginBottom:8}},w.mn),
+          React.createElement("div",{style:{fontSize:13,color:"#a78bfa",lineHeight:1.5,marginBottom:10}},w.jp),
+          React.createElement("span",{style:{display:"inline-block",padding:"4px 12px",borderRadius:8,fontSize:12,fontWeight:700,textTransform:"uppercase",letterSpacing:".05em",background:sc.bg,color:sc.c}},sc.label)))),
+    React.createElement("div",{className:"bb"},
+      React.createElement("div",{className:"btr"},React.createElement("div",{className:"bfl",style:{width:((idx+1)/total*100)+"%"}})),
+      React.createElement("div",{className:"bbs"},
+        React.createElement("button",{className:"nb npv",onClick:()=>{setDir("l");setIdx(i=>(i-1+total)%total)}},"◀ Prev"),
+        React.createElement("button",{className:"nsh",onClick:()=>{setDir("r");setIdx(Math.floor(Math.random()*total))}},IC.shuffle(20)),
+        React.createElement("button",{className:"nb nnx",onClick:()=>{setDir("r");setIdx(i=>(i+1)%total)}},"Next ▶"))));
+}
+
+// ═══ MORE TAB (stats, theme, extras) ═══
+function More({theme,setTheme}){
+  const [dbStatus,setDbStatus]=useState("connecting");
+  const [totalWords,setTotalWords]=useState(0);
+  useEffect(()=>{(async()=>{try{const{count,error}=await supabase.from("chinese_study_app_hanzi_database").select("*",{count:"exact",head:true});if(error)throw error;setTotalWords(count||0);setDbStatus("connected")}catch(e){setDbStatus("error")}})()},[]);
+  return React.createElement("div",{className:"srs"},
+    React.createElement("div",{className:"srs-hd fup"},
+      React.createElement("div",{className:"srs-gl"},"更"),
+      React.createElement("div",null,
+        React.createElement("div",{className:"srs-t"},"More"),
+        React.createElement("div",{className:"srs-s"},"Progress, appearance & extras"))),
+    React.createElement("div",{className:"srs-card fup",style:{animationDelay:"40ms"}},
+      React.createElement("div",{className:"srs-lbl",style:{marginBottom:8}},"Stats"),
+      React.createElement("div",{style:{fontSize:12,marginBottom:12,color:dbStatus==="connected"?"var(--green)":dbStatus==="error"?"var(--accent)":"var(--text-dim)"}},
+        dbStatus==="connected"?"● Database connected · "+totalWords+" total words":dbStatus==="error"?"● Database offline · showing cached counts":"● Connecting to database..."),
+      React.createElement("div",{className:"hsts",style:{marginBottom:0}},
+        [{v:totalWords>0?totalWords.toLocaleString():"1,935",l:"Total Words",c:"var(--text)"},{v:"342",l:"Rated",c:"var(--green)"},{v:"7",l:"Day Streak",c:"var(--accent)"},{v:"12",l:"Sessions",c:"#e8b931"}].map((s,i)=>
+          React.createElement("div",{key:i,className:"hstc"},
+            React.createElement("div",{className:"hstv",style:{color:s.c}},s.v),
+            React.createElement("div",{className:"hstl"},s.l))))),
+    React.createElement("div",{className:"srs-card fup",style:{animationDelay:"80ms"}},
+      React.createElement("div",{className:"srs-lbl",style:{marginBottom:2}},"Theme"),
+      React.createElement("div",{className:"th-row"},
+        THEMES.map(t=>React.createElement("div",{key:t.key,style:{textAlign:"center"}},
+          React.createElement("div",{className:"th-btn "+t.cls+(theme===t.key?" on":""),onClick:()=>setTheme(t.key)}),
+          React.createElement("div",{className:"th-label"},t.label))))),
+    React.createElement("div",{className:"srs-card fup",style:{animationDelay:"120ms",paddingBottom:4}},
+      React.createElement("div",{className:"srs-lbl",style:{marginBottom:2}},"Coming Soon"),
+      [{g:"故",n:"Stories",d:"Graded reading practice"},{g:"漢",n:"Similar Hanzi",d:"Easily-confused character drills"}].map((r,i)=>
+        React.createElement("div",{key:r.n,className:"srs-q",style:i>0?{borderTop:"1px solid var(--border)"}:null},
+          React.createElement("div",{className:"srs-qh",style:{fontSize:24,color:"var(--text-muted)"}},r.g),
+          React.createElement("div",{style:{flex:1,minWidth:0}},
+            React.createElement("div",{style:{fontSize:14,fontWeight:600,color:"var(--text)"}},r.n),
+            React.createElement("div",{style:{fontSize:12,color:"var(--text-dim)"}},r.d)),
+          React.createElement("div",{className:"wc-badge"},"soon")))));
+}
+
 function App(){
+  const [tab,setTab]=useState("home");
   const [v,setV]=useState("home");
-  const [tab,setTab]=useState("study");
   const [src,setSrc]=useState(null);
   const [theme,setTheme]=useState(()=>localStorage.getItem("cn-theme")||"dark");
-
   useEffect(()=>{document.body.setAttribute("data-theme",theme);localStorage.setItem("cn-theme",theme)},[theme]);
-
+  const goStudy=()=>{setSrc(CLASS_SOURCES[0]);setV("study");setTab("study")};
+  const startFocus=f=>{if(f&&f.key==="bridge"){setTab("bridge");return}goStudy()};
   return React.createElement("div",null,
-    React.createElement("div",{className:"tnav"},
-      [{k:"study",i:"学",l:"Study"},{k:"srs",i:"复",l:"SRS Review"},{k:"stories",i:"故",l:"Stories"},{k:"similar",i:"漢",l:"Similar Hanzi"}].map(t=>
-        React.createElement("button",{key:t.k,className:`tni ${tab===t.k?"on":""}`,onClick:()=>{setTab(t.k);setV("home")}},
-          React.createElement("span",{className:"tnic"},t.i),t.l))
-    ),
-    v==="home"&&tab==="study"&&React.createElement(Home,{onSelect:s=>{setSrc(s);setV("study")},theme,setTheme}),
-    v==="study"&&tab==="study"&&React.createElement(Study,{source:src,onBack:()=>setV("home")}),
-    tab==="srs"&&v==="home"&&React.createElement(SRS,{onStudy:()=>{setTab("study");setV("home")}}),
-    (tab==="stories"||tab==="similar")&&v==="home"&&React.createElement("div",{className:"cs"},
-      React.createElement("div",{className:"cs-ic"},"🚧"),
-      React.createElement("div",{className:"cs-t"},"Coming Soon"),
-      React.createElement("div",{className:"cs-s"},"This section is under development."))
+    tab==="home"&&React.createElement(HomeFocus,{onStart:startFocus,onStats:()=>setTab("more")}),
+    tab==="study"&&v==="home"&&React.createElement(Home,{onSelect:s=>{setSrc(s);setV("study")}}),
+    tab==="study"&&v==="study"&&React.createElement(Study,{source:src,onBack:()=>setV("home")}),
+    tab==="srs"&&React.createElement(SRS,{onStudy:goStudy}),
+    tab==="bridge"&&React.createElement(Bridge),
+    tab==="more"&&React.createElement(More,{theme,setTheme}),
+    React.createElement("div",{className:"brail"},
+      [{k:"home",i:"家",l:"Home"},{k:"study",i:"学",l:"Study"},{k:"srs",i:"复",l:"SRS"},{k:"bridge",i:"橋",l:"Bridge"},{k:"more",i:"更",l:"More"}].map(t=>
+        React.createElement("button",{key:t.k,className:"bri"+(tab===t.k?" on":""),onClick:()=>{setTab(t.k);setV("home")}},
+          React.createElement("span",{className:"brg"},t.i),t.l)))
   );
 }
 
