@@ -241,15 +241,13 @@ body{font-family:'Noto Sans',sans-serif;background:var(--bg);color:var(--text);-
 @keyframes modalIn{from{opacity:0;transform:translateY(30px) scale(.95)}to{opacity:1;transform:translateY(0) scale(1)}}
 @keyframes rPop{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 .fup{animation:fadeUp .4s ease-out both}
-@keyframes cardInR{from{opacity:0;transform:translateX(32px)}to{opacity:1;transform:none}}
-@keyframes cardInL{from{opacity:0;transform:translateX(-32px)}to{opacity:1;transform:none}}
 
 /* NAV */
 .tnav{display:grid;grid-template-columns:repeat(4,1fr);border-bottom:2px solid var(--border);background:var(--bg-card);transition:all .4s}
 .tni{display:flex;flex-direction:column;align-items:center;gap:4px;padding:12px 8px 10px;cursor:pointer;border:none;background:0;color:var(--text-dim);font-size:12px;font-family:'Noto Sans',sans-serif;font-weight:500;transition:all .2s;border-bottom:3px solid transparent}
 .tni:hover{color:var(--text-muted);background:var(--bg-card-hover)}
 .tni.on{color:var(--accent);border-bottom-color:var(--accent);background:var(--accent-glow)}
-.tnic{font-size:18px;font-family:'Noto Serif SC',serif;font-weight:600}
+.tnic{font-size:18px}
 
 /* SUBHEADER */
 .shdr{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--border);transition:all .4s}
@@ -277,7 +275,7 @@ body{font-family:'Noto Sans',sans-serif;background:var(--bg);color:var(--text);-
 .gc-sn{font-family:'Noto Serif SC',serif;font-size:20px;color:var(--gold-text);line-height:2;margin-top:4px}
 .gc-sn .tg{font-size:56px;font-weight:700;color:var(--accent);vertical-align:middle;display:inline-block;margin:0 4px;text-shadow:0 2px 8px rgba(196,85,58,.2);line-height:1}
 .gc-sm{margin-top:8px;font-family:'Crimson Pro',serif;font-size:14px;font-style:italic;color:var(--gold-sub)}
-.gc-pb{font-family:'Crimson Pro','Noto Sans',serif;font-size:34px;font-style:italic;color:#4488ff;font-weight:500}
+.gc-pb{font-family:'Crimson Pro',serif;font-size:34px;font-style:italic;color:#4488ff;font-weight:500}
 .gc-mb{font-family:'Crimson Pro',serif;font-size:22px;color:var(--green);font-weight:500;margin-top:6px}
 .gc-sb{font-family:'Noto Serif SC',serif;font-size:20px;color:var(--gold-text);margin-top:12px;line-height:1.8}
 .gc-sb .bk{display:inline-block;border-bottom:3px solid var(--accent);width:40px;margin:0 4px;vertical-align:baseline}
@@ -294,7 +292,7 @@ body{font-family:'Noto Sans',sans-serif;background:var(--bg);color:var(--text);-
 .hc-r{margin-top:12px;animation:rPop .3s ease-out both}
 .hc-r:first-child{margin-top:0}
 .hc-ht{font-size:15px;color:var(--white-text);font-style:italic;line-height:1.5}
-.hc-py{font-family:'Crimson Pro','Noto Sans',serif;font-size:30px;font-weight:400;font-style:italic}
+.hc-py{font-family:'Crimson Pro',serif;font-size:30px;font-weight:400;font-style:italic}
 .hc-ma{font-size:14px;color:var(--white-text-light);margin-top:2px}
 .hc-mn{font-family:'Crimson Pro',serif;font-size:22px;color:#4488ff;font-weight:500}
 .hc-mt{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:10px;flex-wrap:wrap}
@@ -409,7 +407,7 @@ body{font-family:'Noto Sans',sans-serif;background:var(--bg);color:var(--text);-
 .cat-block{margin-bottom:20px}
 .cat-hdr{display:flex;align-items:center;gap:12px;margin-bottom:0;cursor:pointer;transition:all .2s;padding:12px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:12px}
 .cat-hdr:hover{background:var(--bg-card-hover);transform:translateX(2px)}
-.cat-icon{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;font-family:'Noto Serif SC',serif;color:#fff;font-weight:600}
+.cat-icon{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
 .cat-icon.cls{background:var(--cat-cls)}
 .cat-icon.slf{background:var(--cat-slf)}
 .cat-info{flex:1}
@@ -424,31 +422,13 @@ body{font-family:'Noto Sans',sans-serif;background:var(--bg);color:var(--text);-
 .srw{display:flex;align-items:center;gap:12px;background:var(--bg-card);border:1px solid var(--border);border-top:0;padding:14px 16px 14px 72px;cursor:pointer;transition:all .25s}
 .srw:last-child{border-radius:0 0 12px 12px}
 .srw:hover{background:var(--bg-card-hover)}
-.srwi{font-size:22px;font-family:'Noto Serif SC',serif;font-weight:600;color:var(--accent);width:28px;text-align:center}.srwf{flex:1}
+.srwi{font-size:24px}.srwf{flex:1}
 .srwn{font-weight:600;font-size:14px;color:var(--text)}
 .srwm{font-size:11px;color:var(--text-dim)}
 .srwa{color:var(--text-dim);font-size:16px}
 .sbar{width:100%;height:3px;background:var(--border);border-radius:2px;margin-top:5px;overflow:hidden}
 .sbfl{height:100%;border-radius:2px;background:var(--green)}
 .wc-badge{background:var(--bg-card-hover);border:1px solid var(--border);border-radius:8px;padding:2px 8px;font-size:11px;color:var(--text-muted);font-weight:500;white-space:nowrap}
-
-/* SRS */
-.srs{max-width:720px;margin:0 auto;padding:20px 20px 80px;display:flex;flex-direction:column;gap:16px}
-.srs-hd{display:flex;align-items:baseline;gap:10px}
-.srs-gl{font-family:'Noto Serif SC',serif;font-size:26px;font-weight:700;color:var(--accent)}
-.srs-t{font-family:'Crimson Pro',serif;font-size:22px;font-weight:700;color:var(--text)}
-.srs-s{font-size:13px;color:var(--text-dim)}
-.srs-card{background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:16px;transition:all .4s}
-.srs-lbl{font-family:'Crimson Pro',serif;font-size:15px;color:var(--text-muted);margin-bottom:14px}
-.srs-fc{display:flex;align-items:flex-end;gap:8px;height:90px}
-.srs-day{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:6px;height:100%}
-.srs-bar{width:100%;border-radius:5px;background:color-mix(in srgb,var(--accent) 22%,transparent);transition:height .3s}
-.srs-bar.on{background:var(--accent)}
-.srs-n{font-size:11px;color:var(--text-dim)}.srs-n.on{color:var(--accent);font-weight:700}
-.srs-d{font-size:10px;color:var(--text-dim)}.srs-d.on{color:var(--text);font-weight:600}
-.srs-q{display:flex;align-items:center;gap:14px;padding:12px 0;cursor:pointer}
-.srs-q:hover .srs-qh{transform:scale(1.08)}
-.srs-qh{font-family:'Noto Serif SC',serif;font-size:30px;font-weight:600;color:var(--accent);width:40px;text-align:center;transition:transform .2s}
 
 /* COMING SOON */
 .cs{padding:60px 20px;text-align:center;color:var(--text-dim)}
@@ -483,12 +463,12 @@ const SUPABASE_URL = "https://ulgrfumbwjovbjzjiems.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVsZ3JmdW1id2pvdmJqemppZW1zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjczNzIyNjcsImV4cCI6MjA4Mjk0ODI2N30.ix5Vh4Y3GXNbQbzVtTD_WSko0L3cr5q_eCnTuDEMh7M";
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-const CLASS_SOURCES=[{id:1,key:"HSK_1",label:"HSK 1",icon:"一",word_count:273,level:"H1"}];
+const CLASS_SOURCES=[{id:1,key:"HSK_1",label:"HSK 1",icon:"📘",word_count:273,level:"H1"}];
 const SELF_SOURCES=[
   {id:2,key:"first_100",label:"First 100 Characters",icon:"百",word_count:100,level:"F1"},
-  {id:3,key:"mimi_tan",label:"Mimi Tan Stories",icon:"故",word_count:854,level:"MT"},
-  {id:4,key:"kg_book",label:"KG Book",icon:"读",word_count:590,level:"KG"},
-  {id:5,key:"kg_numbers",label:"KG Numbers",icon:"数",word_count:78,level:"KN"},
+  {id:3,key:"mimi_tan",label:"Mimi Tan Stories",icon:"📖",word_count:854,level:"MT"},
+  {id:4,key:"kg_book",label:"KG Book",icon:"📕",word_count:590,level:"KG"},
+  {id:5,key:"kg_numbers",label:"KG Numbers",icon:"🔢",word_count:78,level:"KN"},
 ];
 
 // ═══ COLUMN MAPPING: Supabase → App format ═══
@@ -608,20 +588,10 @@ const W_FALLBACK=[
 ];
 
 const TC={1:"#ff4444",2:"#44bb44",3:"#4488ff",4:"#aa44ff",5:"#999"};
-
-// ═══ LINE ICONS (inline SVG, replaces emoji) ═══
-const _svg=(kids,size)=>React.createElement("svg",{width:size||16,height:size||16,viewBox:"0 0 24 24",fill:"none",stroke:"currentColor",strokeWidth:1.8,strokeLinecap:"round",strokeLinejoin:"round",style:{verticalAlign:"-3px"}},...kids);
-const IC={
-  gear:s=>_svg([React.createElement("circle",{key:1,cx:12,cy:12,r:3}),React.createElement("path",{key:2,d:"M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"})],s),
-  eye:s=>_svg([React.createElement("path",{key:1,d:"M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"}),React.createElement("circle",{key:2,cx:12,cy:12,r:3})],s),
-  bulb:s=>_svg([React.createElement("path",{key:1,d:"M9 18h6"}),React.createElement("path",{key:2,d:"M10 22h4"}),React.createElement("path",{key:3,d:"M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.4 1 2.3h6c0-.9.4-1.8 1-2.3A7 7 0 0 0 12 2z"})],s),
-  chev:s=>_svg([React.createElement("polyline",{key:1,points:"6 9 12 15 18 9"})],s),
-  shuffle:s=>_svg([React.createElement("polyline",{key:1,points:"16 3 21 3 21 8"}),React.createElement("line",{key:2,x1:4,y1:20,x2:21,y2:3}),React.createElement("polyline",{key:3,points:"21 16 21 21 16 21"}),React.createElement("line",{key:4,x1:15,y1:15,x2:21,y2:21}),React.createElement("line",{key:5,x1:4,y1:4,x2:9,y2:9})],s),
-};
 const RI=["🔴","🟩","💬","🍀","🤔","❌"];
 const RL=["New","Known","Review","Lucky","Unsure","Wrong"];
 const RC=["#ef4444","#22c55e","#8b5cf6","#22d3ee","#f59e0b","#ef4444"];
-const MODES=[{key:"hanzi",label:"漢 Hanzi Recognition"},{key:"reading",label:"あ Reading Recognition"},{key:"writing",label:"写 Writing Test"}];
+const MODES=[{key:"hanzi",label:"漢 Hanzi Recognition"},{key:"reading",label:"あ Reading Recognition"},{key:"writing",label:"✍ Writing Test"}];
 const THEMES=[
   {key:"dark",label:"Dark",cls:"th-dark"},
   {key:"paper",label:"Paper",cls:"th-paper"},
@@ -639,16 +609,16 @@ function DrawCanvas({clearRef}){
   const cl=()=>{const c=ref.current;c.getContext("2d").clearRect(0,0,c.width,c.height)};
   useEffect(()=>{if(clearRef)clearRef.current=cl},[clearRef]);
   return React.createElement("div",{className:"crd"},
-    React.createElement("button",{className:"ccl",onClick:cl},"✕ Clear"),
+    React.createElement("button",{className:"ccl",onClick:cl},"🗑 Clear"),
     React.createElement("canvas",{ref,className:"cvs",onMouseDown:sd,onMouseUp:ed,onMouseLeave:ed,onMouseMove:mv,onTouchStart:sd,onTouchEnd:ed,onTouchMove:mv}),
-    React.createElement("div",{className:"cvh"},"Draw hanzi here")
+    React.createElement("div",{className:"cvh"},"✍ Draw hanzi here")
   );
 }
 
 function Exp({c,label,icon,o,tog,pc,children}){
   return React.createElement("div",null,
     React.createElement("button",{className:`xb ${c} ${o?"op":""}`,onClick:tog},
-      React.createElement("span",{style:{fontFamily:"'Noto Serif SC',serif"}},icon)," ",label,React.createElement("span",{className:"xa"},"▼")),
+      React.createElement("span",null,icon)," ",label,React.createElement("span",{className:"xa"},"▼")),
     React.createElement("div",{className:`xp ${pc} ${o?"op":""}`},children)
   );
 }
@@ -657,7 +627,7 @@ function JpModal({w,onClose}){
   return React.createElement("div",{className:"jov",onClick:onClose},
     React.createElement("div",{className:"jmd",onClick:e=>e.stopPropagation()},
       React.createElement("button",{className:"jcx",onClick:onClose},"✕"),
-      React.createElement("div",{className:"jtl"},React.createElement("span",{style:{fontFamily:"'Noto Serif SC',serif",fontSize:16}},"橋")," Japanese Bridge"),
+      React.createElement("div",{className:"jtl"},"🌉 Japanese Bridge"),
       React.createElement("div",{className:"jcmp"},
         React.createElement("div",{className:"jcol"},React.createElement("div",{className:"jclb"},"Chinese"),React.createElement("div",{className:"jch jcnc"},w.hz)),
         React.createElement("div",{className:"jarr"},"⟷"),
@@ -712,14 +682,14 @@ function Home({onSelect,theme,setTheme}){
 
   return React.createElement("div",{className:"hm"},
     React.createElement("div",{style:{display:"flex",justifyContent:"flex-end",marginBottom:16}},
-      React.createElement("button",{className:"sgr fup",onClick:()=>setSettingsOpen(o=>!o),style:{width:40,height:40}},IC.gear(18))
+      React.createElement("button",{className:"sgr fup",onClick:()=>setSettingsOpen(o=>!o),style:{width:40,height:40,fontSize:18}},"⚙")
     ),
     settingsOpen && React.createElement("div",{className:"sp fup"},
-      React.createElement("div",{className:"sp-title"},"Stats"),
+      React.createElement("div",{className:"sp-title"},"📊 Stats"),
       React.createElement("div",{style:{display:"flex",alignItems:"center",gap:8,marginBottom:10,fontSize:12,color:dbStatus==="connected"?"var(--green)":dbStatus==="error"?"var(--accent)":"var(--text-dim)"}},
-        dbStatus==="connected"?"● Database connected · "+totalWords+" total words":
-        dbStatus==="error"?"● Database offline · showing cached counts":
-        "● Connecting to database..."),
+        dbStatus==="connected"?"🟢 Database connected · "+totalWords+" total words":
+        dbStatus==="error"?"🔴 Database offline · showing cached counts":
+        "🟡 Connecting to database..."),
       React.createElement("div",{className:"hsts"},
         [{v:totalWords>0?totalWords.toLocaleString():"1,935",l:"Total Words",c:"var(--text)"},{v:"342",l:"Rated",c:"var(--green)"},{v:"7",l:"Day Streak",c:"var(--accent)"},{v:"12",l:"Sessions",c:"#e8b931"}].map((s,i)=>
           React.createElement("div",{key:i,className:"hstc"},
@@ -727,7 +697,7 @@ function Home({onSelect,theme,setTheme}){
             React.createElement("div",{className:"hstl"},s.l)
           ))
       ),
-      React.createElement("div",{className:"sp-title",style:{marginTop:16}},"Theme"),
+      React.createElement("div",{className:"sp-title",style:{marginTop:16}},"🎨 Theme"),
       React.createElement("div",{className:"th-row"},
         THEMES.map(t=>React.createElement("div",{key:t.key,style:{textAlign:"center"}},
           React.createElement("div",{className:`th-btn ${t.cls} ${theme===t.key?"on":""}`,onClick:()=>setTheme(t.key)}),
@@ -737,7 +707,7 @@ function Home({onSelect,theme,setTheme}){
     ),
     React.createElement("div",{className:"cat-block fup",style:{animationDelay:"50ms"}},
       React.createElement("div",{className:`cat-hdr ${classOpen?"exp":""}`,onClick:()=>setClassOpen(o=>!o)},
-        React.createElement("div",{className:"cat-icon cls"},"课"),
+        React.createElement("div",{className:"cat-icon cls"},"🏫"),
         React.createElement("div",{className:"cat-info"},
           React.createElement("div",{className:"cat-title"},"Chinese Class"),
           React.createElement("div",{className:"cat-desc"},"Structured HSK curriculum")
@@ -750,7 +720,7 @@ function Home({onSelect,theme,setTheme}){
     ),
     React.createElement("div",{className:"cat-block fup",style:{animationDelay:"120ms"}},
       React.createElement("div",{className:`cat-hdr ${selfOpen?"exp":""}`,onClick:()=>setSelfOpen(o=>!o)},
-        React.createElement("div",{className:"cat-icon slf"},"自"),
+        React.createElement("div",{className:"cat-icon slf"},"📚"),
         React.createElement("div",{className:"cat-info"},
           React.createElement("div",{className:"cat-title"},"Self Study"),
           React.createElement("div",{className:"cat-desc"},"Personal vocabulary & reading material")
@@ -773,7 +743,6 @@ function Study({source,onBack}){
   const [tO,setTO]=useState(false);
   const [rO,setRO]=useState(false);
   const [jO,setJO]=useState(false);
-  const [dir,setDir]=useState("r");
   const cr=useRef(null);
 
   // All hooks MUST be above this line — no conditional returns before hooks
@@ -785,9 +754,9 @@ function Study({source,onBack}){
   const showError = error && W.length === 0;
 
   const rst=useCallback(()=>{setRating(null);setStep(0);setTO(false);setRO(false);setJO(false);if(cr.current)cr.current()},[]);
-  const nxt=()=>{setDir("r");setIdx(i=>Math.min(i+1,total-1));rst()};
-  const prv=()=>{setDir("l");setIdx(i=>Math.max(i-1,0));rst()};
-  const shf=()=>{let n;do{n=Math.floor(Math.random()*total)}while(n===safeIdx&&total>1);setDir("r");setIdx(n);rst()};
+  const nxt=()=>{setIdx(i=>Math.min(i+1,total-1));rst()};
+  const prv=()=>{setIdx(i=>Math.max(i-1,0));rst()};
+  const shf=()=>{let n;do{n=Math.floor(Math.random()*total)}while(n===safeIdx&&total>1);setIdx(n);rst()};
   const tap=()=>{if(step<4)setStep(s=>s+1)};
 
   const handleRate=(val)=>{
@@ -800,10 +769,10 @@ function Study({source,onBack}){
     React.createElement("div",{className:"shdr"},
       React.createElement("button",{className:"bbk",onClick:onBack},"← Back"),
       React.createElement("div",{className:"sbdg"},React.createElement("span",{className:"ltg"},source.level),React.createElement("div",{className:"si"},React.createElement("div",{className:"snm"},source.label),React.createElement("div",{className:"scn"},"Loading..."))),
-      React.createElement("button",{className:"sgr"},IC.gear())
+      React.createElement("button",{className:"sgr"},"⚙")
     ),
     React.createElement("div",{style:{padding:"60px 20px",textAlign:"center"}},
-      React.createElement("div",{style:{fontSize:40,marginBottom:12,fontFamily:"'Noto Serif SC',serif",fontWeight:700,color:"var(--accent)"}},"学"),
+      React.createElement("div",{style:{fontSize:40,marginBottom:12}},"⏳"),
       React.createElement("div",{style:{fontFamily:"'Crimson Pro',serif",fontSize:20,color:"var(--text-muted)"}},"Loading ",source?.label||"words","..."),
       React.createElement("div",{style:{fontSize:14,color:"var(--text-dim)",marginTop:8}},"Fetching from database")
     )
@@ -812,7 +781,7 @@ function Study({source,onBack}){
   const inl=()=>{const p=w.sn.split(w.hz);return p.map((x,i)=>React.createElement("span",{key:i},x,i<p.length-1&&React.createElement("span",{className:"tg"},w.hz)))};
   const bln=(cls)=>{const p=w.sn.split(w.hz);return React.createElement("div",{className:cls},p.map((x,i)=>React.createElement("span",{key:i},x,i<p.length-1&&React.createElement("span",{className:"bk"}," "))))};
 
-  const jpBtn=()=>React.createElement("button",{className:"jpb",onClick:e=>{e.stopPropagation();setJO(true)}},React.createElement("span",{style:{fontFamily:"'Noto Serif SC',serif"}},"橋")," JP");
+  const jpBtn=()=>React.createElement("button",{className:"jpb",onClick:e=>{e.stopPropagation();setJO(true)}},"🌉 JP");
 
   const hanziMode=()=>React.createElement(React.Fragment,null,
     React.createElement("div",{className:"gc fup"},jpBtn(),
@@ -820,8 +789,8 @@ function Study({source,onBack}){
       step>=1&&React.createElement(React.Fragment,null,React.createElement("div",{className:"gc-sn"},inl()),React.createElement("div",{className:"gc-sm"},w.sm))
     ),
     React.createElement("div",{className:"hc fup",style:{animationDelay:"80ms"},onClick:tap},
-      step===0&&React.createElement("div",{className:"hc-ph"},IC.eye()," Tap to reveal hint"),
-      step>=1&&React.createElement("div",{className:"hc-r"},React.createElement("div",{className:"hc-ht"},IC.bulb()," ",w.ht)),
+      step===0&&React.createElement("div",{className:"hc-ph"},"👆 Tap to reveal hint"),
+      step>=1&&React.createElement("div",{className:"hc-r"},React.createElement("div",{className:"hc-ht"},"💡 "+w.ht)),
       step>=2&&React.createElement("div",{className:"hc-r"},React.createElement("div",{className:"hc-py",style:{color:TC[w.t]}},w.py),React.createElement("div",{className:"hc-ma"},w.mr)),
       step>=3&&React.createElement("div",{className:"hc-r"},React.createElement("div",{className:"hc-mn"},w.mn),
         React.createElement("div",{className:"hc-mt"},
@@ -830,7 +799,7 @@ function Study({source,onBack}){
           React.createElement("span",{className:"pl"},w.sc+" strokes"),
           React.createElement("span",{className:"pl"},"#"+w.fr)
         )),
-      step>0&&step<3&&React.createElement("div",{className:"hc-tm"},IC.chev(13)," Tap for more...")
+      step>0&&step<3&&React.createElement("div",{className:"hc-tm"},"👆 Tap for more...")
     )
   );
 
@@ -841,13 +810,13 @@ function Study({source,onBack}){
       step>=1&&React.createElement(React.Fragment,null,bln("gc-sb"),React.createElement("div",{className:"gc-sm"},w.sm))
     ),
     React.createElement("div",{className:"hc fup",style:{animationDelay:"80ms"},onClick:tap},
-      step===0&&React.createElement("div",{className:"hc-ph"},IC.eye()," Tap to reveal hint"),
-      step>=1&&React.createElement("div",{className:"hc-r"},React.createElement("div",{className:"hc-ht"},IC.bulb()," ",w.ht)),
+      step===0&&React.createElement("div",{className:"hc-ph"},"👆 Tap to reveal hint"),
+      step>=1&&React.createElement("div",{className:"hc-r"},React.createElement("div",{className:"hc-ht"},"💡 "+w.ht)),
       step>=2&&React.createElement("div",{className:"hc-r"},
         React.createElement("div",{style:{fontSize:14,color:"var(--white-text-light)"}},"Radical: ",React.createElement("span",{style:{fontFamily:"'Noto Serif SC',serif",fontSize:20,color:"var(--accent)"}},w.rad)," (",w.rl,") · ",w.sc," strokes"),
         React.createElement("div",{className:"hc-ma"},w.mr)),
       step>=3&&React.createElement("div",{className:"hc-r"},React.createElement("div",{className:"hc-an"},w.hz)),
-      step>0&&step<3&&React.createElement("div",{className:"hc-tm"},IC.chev(13)," Tap to reveal hanzi")
+      step>0&&step<3&&React.createElement("div",{className:"hc-tm"},"👆 Tap to reveal hanzi")
     )
   );
 
@@ -858,11 +827,11 @@ function Study({source,onBack}){
     ),
     React.createElement("div",{className:"fup",style:{animationDelay:"80ms"}},React.createElement(DrawCanvas,{clearRef:cr})),
     React.createElement("div",{className:"hc fup",style:{animationDelay:"140ms"},onClick:tap},
-      step===0&&React.createElement("div",{className:"hc-ph"},IC.eye()," Tap to reveal hint"),
-      step>=1&&React.createElement("div",{className:"hc-r"},React.createElement("div",{className:"hc-ht"},IC.bulb()," ",w.ht)),
+      step===0&&React.createElement("div",{className:"hc-ph"},"👆 Tap to reveal hint"),
+      step>=1&&React.createElement("div",{className:"hc-r"},React.createElement("div",{className:"hc-ht"},"💡 "+w.ht)),
       step>=2&&React.createElement("div",{className:"hc-r"},React.createElement("div",{className:"hc-py",style:{color:TC[w.t]}},w.py),React.createElement("div",{className:"hc-ma"},w.mr)),
       step>=3&&React.createElement("div",{className:"hc-r"},React.createElement("div",{className:"hc-an"},w.hz)),
-      step>0&&step<3&&React.createElement("div",{className:"hc-tm"},IC.chev(13)," Tap for more...")
+      step>0&&step<3&&React.createElement("div",{className:"hc-tm"},"👆 Tap for more...")
     )
   );
 
@@ -872,18 +841,18 @@ function Study({source,onBack}){
     React.createElement("div",{className:"shdr"},
       React.createElement("button",{className:"bbk",onClick:onBack},"← Back"),
       React.createElement("div",{className:"sbdg"},React.createElement("span",{className:"ltg"},source.level),React.createElement("div",{className:"si"},React.createElement("div",{className:"snm"},source.label),React.createElement("div",{className:"scn"},(safeIdx+1)+" / "+total))),
-      React.createElement("button",{className:"sgr"},IC.gear())
+      React.createElement("button",{className:"sgr"},"⚙")
     ),
     React.createElement("div",{className:"mtbs"},MODES.map(m=>React.createElement("button",{key:m.key,className:`mtb ${mode===m.key?"on":""}`,onClick:()=>{setMode(m.key);rst()}},m.label))),
-    React.createElement("div",{className:"ss",key:safeIdx,style:{animation:(dir==="l"?"cardInL":"cardInR")+" .22s ease-out both"}},
+    React.createElement("div",{className:"ss"},
       mode==="hanzi"&&hanziMode(),
       mode==="reading"&&readingMode(),
       mode==="writing"&&writingMode(),
       w.tr&&React.createElement("div",{className:"fup",style:{animationDelay:"200ms"}},
-        React.createElement(Exp,{c:"xt",label:"Tone Sandhi Rule",icon:"声",o:tO,tog:()=>setTO(o=>!o),pc:"tp"},
+        React.createElement(Exp,{c:"xt",label:"Tone Sandhi Rule",icon:"🎵",o:tO,tog:()=>setTO(o=>!o),pc:"tp"},
           React.createElement("div",{className:"ttx"},w.tr),React.createElement("div",{className:"tex"},w.hz))),
       React.createElement("div",{className:"fup",style:{animationDelay:"260ms"}},
-        React.createElement(Exp,{c:"xrd",label:"Radical & Components",icon:"部",o:rO,tog:()=>setRO(o=>!o),pc:"rdp"},
+        React.createElement(Exp,{c:"xrd",label:"Radical & Components",icon:"🔍",o:rO,tog:()=>setRO(o=>!o),pc:"rdp"},
           React.createElement("div",{className:"prw"},React.createElement("div",{className:"rdb"},w.rad),React.createElement("div",{className:"rdi"},
             React.createElement("div",{className:"rdl"},"Radical: "+w.rad+" ("+w.rl+")"),
             React.createElement("div",{className:"rdd"},"Stroke count: "+w.sc),
@@ -897,47 +866,11 @@ function Study({source,onBack}){
       React.createElement("div",{className:"btr"},React.createElement("div",{className:"bfl",style:{width:`${prog}%`}})),
       React.createElement("div",{className:"bbs"},
         React.createElement("button",{className:"nb npv",onClick:prv},"◀ Prev"),
-        React.createElement("button",{className:"nsh",onClick:shf},IC.shuffle(20)),
+        React.createElement("button",{className:"nsh",onClick:shf},"🎲"),
         React.createElement("button",{className:"nb nnx",onClick:nxt},"Next ▶")
       )
     ),
     jO&&React.createElement(JpModal,{w,onClose:()=>setJO(false)})
-  );
-}
-
-// ═══ SRS SCREEN ═══
-const SRS_FC=[{d:"Mon",n:5},{d:"Tue",n:12},{d:"Wed",n:8},{d:"Thu",n:19},{d:"Fri",n:7},{d:"Sat",n:14},{d:"Sun",n:10}];
-const SRS_DUE=[{i:0,due:"due now"},{i:3,due:"due now"},{i:2,due:"in 2 h"},{i:1,due:"in 5 h"},{i:4,due:"tomorrow"}];
-function SRS({onStudy}){
-  const max=Math.max(...SRS_FC.map(f=>f.n));
-  const td=(new Date().getDay()+6)%7;
-  return React.createElement("div",{className:"srs"},
-    React.createElement("div",{className:"srs-hd fup"},
-      React.createElement("div",{className:"srs-gl"},"复"),
-      React.createElement("div",null,
-        React.createElement("div",{className:"srs-t"},"Spaced Review"),
-        React.createElement("div",{className:"srs-s"},SRS_DUE.length+" cards waiting for you today"))),
-    React.createElement("div",{className:"hsts fup",style:{marginBottom:0,animationDelay:"40ms",gridTemplateColumns:"repeat(3,1fr)"}},
-      [{v:"5",l:"Due Today",c:"var(--accent)"},{v:"2",l:"New",c:"var(--green)"},{v:"3",l:"Learning",c:"#e8b931"}].map((s,i)=>
-        React.createElement("div",{key:i,className:"hstc"},
-          React.createElement("div",{className:"hstv",style:{color:s.c}},s.v),
-          React.createElement("div",{className:"hstl"},s.l)))),
-    React.createElement("div",{className:"srs-card fup",style:{animationDelay:"80ms"}},
-      React.createElement("div",{className:"srs-lbl"},"7-Day Forecast"),
-      React.createElement("div",{className:"srs-fc"},SRS_FC.map((f,i)=>
-        React.createElement("div",{key:f.d,className:"srs-day"},
-          React.createElement("div",{className:"srs-n"+(i===td?" on":"")},f.n),
-          React.createElement("div",{className:"srs-bar"+(i===td?" on":""),style:{height:Math.max(8,f.n/max*56)}}),
-          React.createElement("div",{className:"srs-d"+(i===td?" on":"")},f.d))))),
-    React.createElement("div",{className:"srs-card fup",style:{animationDelay:"120ms",paddingBottom:4}},
-      React.createElement("div",{className:"srs-lbl",style:{marginBottom:2}},"Review Queue"),
-      SRS_DUE.map((q,i)=>{const w=W_FALLBACK[q.i];
-        return React.createElement("div",{key:w.id,className:"srs-q",onClick:onStudy,style:i>0?{borderTop:"1px solid var(--border)"}:null},
-          React.createElement("div",{className:"srs-qh"},w.hz),
-          React.createElement("div",{style:{flex:1,minWidth:0}},
-            React.createElement("div",{className:"hc-py",style:{color:TC[w.t],fontSize:16}},w.py),
-            React.createElement("div",{style:{fontSize:12,color:"var(--text-dim)",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}},w.mn)),
-          React.createElement("div",{className:"wc-badge"},q.due));}))
   );
 }
 
@@ -951,14 +884,13 @@ function App(){
 
   return React.createElement("div",null,
     React.createElement("div",{className:"tnav"},
-      [{k:"study",i:"学",l:"Study"},{k:"srs",i:"复",l:"SRS Review"},{k:"stories",i:"故",l:"Stories"},{k:"similar",i:"漢",l:"Similar Hanzi"}].map(t=>
-        React.createElement("button",{key:t.k,className:`tni ${tab===t.k?"on":""}`,onClick:()=>{setTab(t.k);setV("home")}},
+      [{k:"study",i:"📚",l:"Study"},{k:"srs",i:"🔄",l:"SRS Review"},{k:"stories",i:"📖",l:"Stories"},{k:"similar",i:"漢",l:"Similar Hanzi"}].map(t=>
+        React.createElement("button",{key:t.k,className:`tni ${tab===t.k?"on":""}`,onClick:()=>{setTab(t.k);if(t.k==="study")setV("home")}},
           React.createElement("span",{className:"tnic"},t.i),t.l))
     ),
     v==="home"&&tab==="study"&&React.createElement(Home,{onSelect:s=>{setSrc(s);setV("study")},theme,setTheme}),
-    v==="study"&&tab==="study"&&React.createElement(Study,{source:src,onBack:()=>setV("home")}),
-    tab==="srs"&&v==="home"&&React.createElement(SRS,{onStudy:()=>{setTab("study");setV("home")}}),
-    (tab==="stories"||tab==="similar")&&v==="home"&&React.createElement("div",{className:"cs"},
+    v==="study"&&React.createElement(Study,{source:src,onBack:()=>setV("home")}),
+    tab!=="study"&&v==="home"&&React.createElement("div",{className:"cs"},
       React.createElement("div",{className:"cs-ic"},"🚧"),
       React.createElement("div",{className:"cs-t"},"Coming Soon"),
       React.createElement("div",{className:"cs-s"},"This section is under development."))
