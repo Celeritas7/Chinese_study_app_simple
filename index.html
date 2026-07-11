@@ -274,7 +274,7 @@ body{font-family:'Noto Sans',sans-serif;background:var(--bg);color:var(--text);-
 .sgr:hover{border-color:var(--border-hover);color:var(--text)}
 
 /* MODE TABS */
-.mtbs{display:flex;justify-content:center;gap:8px;padding:14px 20px;border-bottom:1px solid var(--border)}
+.mtbs{display:flex;justify-content:center;gap:8px;padding:14px 20px;border-bottom:1px solid var(--border);flex-wrap:wrap}
 .mtb{padding:8px 20px;border-radius:20px;border:1.5px solid var(--border);background:0;color:var(--text-dim);font-size:13px;font-family:'Noto Sans',sans-serif;font-weight:500;cursor:pointer;transition:all .25s;white-space:nowrap}
 .mtb:hover{border-color:var(--border-hover);color:var(--text-muted)}
 .mtb.on{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
@@ -780,8 +780,8 @@ function Study({source,onBack}){
 
   const hanziMode=()=>React.createElement(React.Fragment,null,
     React.createElement("div",{className:"gc fup"},jpBtn(),
-      step===0&&React.createElement("div",{className:"gc-hz"},w.hz),
-      step>=1&&React.createElement(React.Fragment,null,React.createElement("div",{className:"gc-sn"},inl()),React.createElement("div",{className:"gc-sm"},w.sm))
+      (step===0||!w.sn)&&React.createElement("div",{className:"gc-hz"},w.hz),
+      step>=1&&w.sn&&React.createElement(React.Fragment,null,React.createElement("div",{className:"gc-sn"},inl()),w.sm&&React.createElement("div",{className:"gc-sm"},w.sm))
     ),
     React.createElement("div",{className:"hc fup",style:{animationDelay:"80ms"},onClick:tap},
       step===0&&React.createElement("div",{className:"hc-ph"},IC.eye()," Tap to reveal hint"),
@@ -802,7 +802,7 @@ function Study({source,onBack}){
     React.createElement("div",{className:"gc fup"},jpBtn(),
       React.createElement("div",{className:"gc-pb"},w.py),
       React.createElement("div",{className:"gc-mb"},w.mn),
-      step>=1&&React.createElement(React.Fragment,null,bln("gc-sb"),React.createElement("div",{className:"gc-sm"},w.sm))
+      step>=1&&w.sn&&React.createElement(React.Fragment,null,bln("gc-sb"),w.sm&&React.createElement("div",{className:"gc-sm"},w.sm))
     ),
     React.createElement("div",{className:"hc fup",style:{animationDelay:"80ms"},onClick:tap},
       step===0&&React.createElement("div",{className:"hc-ph"},IC.eye()," Tap to reveal hint"),
@@ -818,7 +818,7 @@ function Study({source,onBack}){
   const writingMode=()=>React.createElement(React.Fragment,null,
     React.createElement("div",{className:"gc fup"},jpBtn(),
       React.createElement("div",{className:"gc-mo"},w.mn),
-      step>=2&&React.createElement(React.Fragment,null,bln("gc-sb"),React.createElement("div",{className:"gc-sm"},w.sm))
+      step>=2&&w.sn&&React.createElement(React.Fragment,null,bln("gc-sb"),w.sm&&React.createElement("div",{className:"gc-sm"},w.sm))
     ),
     React.createElement("div",{className:"fup",style:{animationDelay:"80ms"}},React.createElement(DrawCanvas,{clearRef:cr})),
     React.createElement("div",{className:"hc fup",style:{animationDelay:"140ms"},onClick:tap},
