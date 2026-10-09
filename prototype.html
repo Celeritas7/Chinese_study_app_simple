@@ -4,227 +4,206 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
 <title>Chinese Study</title>
-<link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;0,700;1,400;1,500&family=Noto+Serif+SC:wght@400;600;700&family=Noto+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;0,700;1,400;1,500&family=Noto+Serif+SC:wght@400;500;600;700&family=Noto+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <!--
   PROTOTYPE — redesigned study flow. index.html is untouched.
-  What changed vs index.html:
-   • Decks load their own words (chinese_study_app_words by source_id)
-   • Real spaced repetition (SM-2 style), saved on this device
-   • One-tap rating (Again / Hard / Good / Easy) that also advances
-   • Pronunciation (browser speech, zh-CN) + Listen mode
-   • Writing mode with stroke-order checking (Hanzi Writer)
-   • Real streak, daily goal, due counts, session summary
-   • Japanese Bridge from the real bridge table
+  Design rules:
+   1. One accent colour per theme. Tone colours appear only on pinyin.
+   2. Spacing instead of boxes; hairline dividers only where lists need them.
+   3. The study card sits on the page background — no coloured card.
+   4. One button family (.btn primary / quiet, same shape) and one icon set
+      (line icons for actions, CJK glyphs for navigation). No emoji.
+   5. Every tab uses the same layout: Header → Sections (label + content).
 -->
 <style>
-:root,[data-theme="dark"]{
-  --bg:#0f1218;--card:#1a1e28;--card2:#222838;--line:#2a3040;--line2:#3a4256;
-  --text:#ece9e3;--muted:#b0aaa0;--dim:#7c766e;
-  --accent:#d0603f;--accent-soft:rgba(208,96,63,.14);
-  --green:#3dbb8a;--amber:#e0a43a;--blue:#5b9bff;--purple:#a78bfa;
-  --gold-bg:#f5e6b8;--gold-line:#e0c868;--gold-text:#3d3020;--gold-sub:rgba(61,48,32,.55);
-  --t1:#ff5a4f;--t2:#3fbf5a;--t3:#4f8dff;--t4:#b05cff;--t5:#9a9a9a;
+/* ── themes: bg, surface, hairline, ink, muted, dim, ONE accent, tone colours ── */
+:root,[data-theme="ink"]{
+  --bg:#121417;--surface:#1c1f24;--hair:#262a31;
+  --text:#ecebe7;--muted:#a9a6a0;--dim:#7d7a75;
+  --accent:#e0714f;--on-accent:#fff;
+  --t1:#ec7a6a;--t2:#6cc88a;--t3:#74a4f2;--t4:#b98ce6;--t5:#8e8e8e;
 }
 [data-theme="paper"]{
-  --bg:#f4efe6;--card:#fffdf8;--card2:#f6f0e4;--line:#e0d8c8;
-  --text:#2c2418;--muted:#6b5d4a;--dim:#9a8e7a;
-  --accent:#9a3f2c;--accent-soft:rgba(154,63,44,.10);
-  --green:#3f8a5e;--amber:#b5802a;--blue:#2f6fd6;--purple:#7b5ea7;
-  --gold-bg:#fffaf0;--gold-line:#d8c49a;--gold-text:#3d3020;--gold-sub:rgba(61,48,32,.5);
-  --t1:#d8352b;--t2:#2b9a44;--t3:#2f6fd6;--t4:#8a3fd0;--t5:#8a8a8a;
+  --bg:#f6f2ea;--surface:#ebe5d9;--hair:#e0d8c9;
+  --text:#25211b;--muted:#5f574b;--dim:#8a8173;
+  --accent:#b4442b;--on-accent:#fff;
+  --t1:#c8382a;--t2:#2f8a4c;--t3:#2c63c4;--t4:#7d40c0;--t5:#8a8a8a;
 }
-[data-theme="paper"]{--line2:#cbbfa8}
 [data-theme="night"]{
-  --bg:#0a0e1a;--card:#121828;--card2:#1a2238;--line:#1e2a44;--line2:#2e3c5c;
-  --text:#ece0cc;--muted:#b0a488;--dim:#7a6e58;
-  --accent:#d4a840;--accent-soft:rgba(212,168,64,.12);
-  --green:#4aaa82;--amber:#d4a840;--blue:#6a9aff;--purple:#9a9ae8;
-  --gold-bg:#161a26;--gold-line:#d4a840;--gold-text:#ece0cc;--gold-sub:rgba(236,224,204,.5);
-  --t1:#ff6a5f;--t2:#4fcf6a;--t3:#6a9aff;--t4:#c07aff;--t5:#9a9a9a;
+  --bg:#0d1120;--surface:#171c2e;--hair:#22293f;
+  --text:#ebe4d6;--muted:#a9a290;--dim:#7a7464;
+  --accent:#d9ad4f;--on-accent:#1a1406;
+  --t1:#ef7d6f;--t2:#6cc88a;--t3:#7aa8f5;--t4:#bf93ea;--t5:#8e8e8e;
 }
 [data-theme="jade"]{
-  --bg:#080e0a;--card:#101c14;--card2:#18281c;--line:#1a3020;--line2:#2a4a30;
-  --text:#d8ecdc;--muted:#8aaa90;--dim:#5a7a60;
-  --accent:#d4a840;--accent-soft:rgba(212,168,64,.10);
-  --green:#3aba7a;--amber:#d4a840;--blue:#6aa6ff;--purple:#8a9ae0;
-  --gold-bg:#122016;--gold-line:#3a8a4a;--gold-text:#d8ecdc;--gold-sub:rgba(216,236,220,.5);
-  --t1:#ff6a5f;--t2:#5adf7a;--t3:#6aa6ff;--t4:#c07aff;--t5:#9a9a9a;
+  --bg:#0c1310;--surface:#15201a;--hair:#1f2d25;
+  --text:#e3ece5;--muted:#9db3a4;--dim:#6f8576;
+  --accent:#5cc28e;--on-accent:#06140c;
+  --t1:#ef7d6f;--t2:#8fd86c;--t3:#7aa8f5;--t4:#bf93ea;--t5:#8e8e8e;
 }
 [data-theme="sunset"]{
-  --bg:#1a100a;--card:#241810;--card2:#2e2018;--line:#3a2818;--line2:#5a4028;
-  --text:#f2e0cc;--muted:#c0a888;--dim:#8a7458;
-  --accent:#d8603f;--accent-soft:rgba(216,96,63,.14);
-  --green:#8aba5a;--amber:#e8a848;--blue:#6aa0ff;--purple:#c09ad0;
-  --gold-bg:#2a1c10;--gold-line:#c4553a;--gold-text:#f2e0cc;--gold-sub:rgba(242,224,204,.5);
-  --t1:#ff6a5f;--t2:#6ad06a;--t3:#6aa0ff;--t4:#c07aff;--t5:#a09a90;
+  --bg:#1a1310;--surface:#251c17;--hair:#33271f;
+  --text:#f2e6da;--muted:#bba892;--dim:#8a7765;
+  --accent:#f08c5a;--on-accent:#1f0f05;
+  --t1:#f27f6c;--t2:#7fcf7f;--t3:#7aa8f5;--t4:#c495e6;--t5:#9a9088;
 }
 
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{background:var(--bg)}
-body{font-family:'Noto Sans',sans-serif;color:var(--text);-webkit-font-smoothing:antialiased;min-height:100vh;transition:background .3s,color .3s}
-button{font-family:inherit;color:inherit}
-.serif{font-family:'Crimson Pro',serif}
+body{font-family:'Noto Sans',sans-serif;color:var(--text);-webkit-font-smoothing:antialiased;min-height:100vh;font-size:15px;line-height:1.45;transition:background .3s,color .3s}
+button{font-family:inherit;color:inherit;border:none;background:none;cursor:pointer}
 .cjk{font-family:'Noto Serif SC',serif}
+.serif{font-family:'Crimson Pro',serif}
 #app{max-width:460px;margin:0 auto;min-height:100vh;position:relative}
-@media(min-width:500px){#app{border-left:1px solid var(--line);border-right:1px solid var(--line)}}
 
-@keyframes up{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
-@keyframes pop{0%{transform:scale(.9);opacity:0}60%{transform:scale(1.03)}100%{transform:scale(1);opacity:1}}
-@keyframes slideIn{from{opacity:0;transform:translateX(28px)}to{opacity:1;transform:none}}
-@keyframes flash{0%{box-shadow:0 0 0 0 var(--flash)}100%{box-shadow:0 0 0 14px transparent}}
-@keyframes burst{0%{transform:scale(.4);opacity:0}50%{opacity:1}100%{transform:scale(1);opacity:1}}
+@keyframes up{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes inR{from{opacity:0;transform:translateX(24px)}to{opacity:1;transform:none}}
+@keyframes stamp{0%{transform:scale(1.6) rotate(-8deg);opacity:0}70%{transform:scale(.96) rotate(-3deg);opacity:1}100%{transform:scale(1) rotate(-3deg)}}
 .up{animation:up .35s ease-out both}
 
-/* ── generic ── */
-.page{padding:16px 16px 96px;display:flex;flex-direction:column;gap:14px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px}
-.lbl{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--dim)}
-.h1{font-family:'Crimson Pro',serif;font-size:28px;font-weight:700;line-height:1.1}
-.sub{font-size:13px;color:var(--dim)}
-.row{display:flex;align-items:center;gap:12px}
-.chip{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:999px;background:var(--card2);border:1px solid var(--line);font-size:12px;color:var(--muted);white-space:nowrap}
-.btn{border:none;border-radius:14px;padding:14px 18px;font-size:16px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:transform .1s,filter .2s,background .2s}
+/* ── shared page layout ── */
+.screen{padding:28px 22px 120px}
+.head{display:flex;align-items:center;gap:14px;margin-bottom:8px}
+.head .g{font-family:'Noto Serif SC',serif;font-size:30px;font-weight:600;color:var(--accent);line-height:1;width:34px;text-align:center;flex-shrink:0}
+.head .t{font-family:'Crimson Pro',serif;font-size:30px;font-weight:700;line-height:1.05}
+.head .s{font-size:14px;color:var(--dim);margin-top:2px}
+.head .r{margin-left:auto;text-align:right}
+.sec{margin-top:34px}
+.sec-t{display:flex;justify-content:space-between;align-items:baseline;font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin-bottom:12px}
+.sec-t .aside{letter-spacing:0;text-transform:none;font-weight:500}
+.list>*+*{border-top:1px solid var(--hair)}
+.muted{color:var(--muted)}.dim{color:var(--dim)}.acc{color:var(--accent)}
+.small{font-size:13px}
+
+/* ── one button family ── */
+.btn{height:52px;padding:0 20px;border-radius:14px;font-size:16px;font-weight:600;display:inline-flex;align-items:center;justify-content:center;gap:8px;transition:transform .1s,filter .2s,background .2s,color .2s;background:var(--surface);color:var(--text)}
 .btn:active{transform:scale(.97)}
-.btn-primary{background:var(--accent);color:#fff}
-.btn-primary:hover{filter:brightness(1.08)}
-.btn-ghost{background:var(--card2);border:1px solid var(--line);color:var(--text)}
-.btn-ghost:hover{border-color:var(--line2)}
-.icon-btn{width:40px;height:40px;border-radius:12px;border:1px solid var(--line);background:var(--card2);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--muted);flex-shrink:0}
-.icon-btn:hover{color:var(--text);border-color:var(--line2)}
-.bar{height:6px;border-radius:3px;background:var(--line);overflow:hidden}
-.bar>i{display:block;height:100%;border-radius:3px;background:var(--green);transition:width .4s}
-.seg{display:flex;gap:6px;flex-wrap:wrap}
-.seg button{flex:1;min-width:0;padding:9px 6px;border-radius:12px;border:1.5px solid var(--line);background:transparent;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px}
-.seg button .cjk{font-size:18px}
-.seg button.on{border-color:var(--accent);background:var(--accent-soft);color:var(--text)}
-.toast{position:fixed;left:50%;bottom:100px;transform:translateX(-50%);background:var(--card2);border:1px solid var(--line2);padding:10px 16px;border-radius:12px;font-size:14px;z-index:300;animation:up .25s both}
+.btn:hover{filter:brightness(1.07)}
+.btn.primary{background:var(--accent);color:var(--on-accent)}
+.btn.sm{height:40px;padding:0 14px;font-size:14px;border-radius:12px}
+.btn.on{background:color-mix(in srgb,var(--accent) 16%,var(--surface));color:var(--accent)}
+.btn.full{width:100%}
+.btn.text{background:transparent;color:var(--muted)}
+.btn.text:hover{color:var(--text)}
+.ibtn{width:42px;height:42px;border-radius:12px;display:inline-flex;align-items:center;justify-content:center;color:var(--muted);flex-shrink:0;transition:color .2s,background .2s}
+.ibtn:hover{color:var(--text);background:var(--surface)}
+.btns{display:flex;gap:8px;flex-wrap:wrap}
+.btns>.btn{flex:1}
 
 /* ── tab bar ── */
-.tabs{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:460px;display:grid;grid-template-columns:repeat(4,1fr);background:var(--card);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0);z-index:50}
-.tab{border:none;background:none;padding:9px 4px 10px;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;font-weight:500;color:var(--dim);cursor:pointer}
-.tab .cjk{font-size:19px;font-weight:600;line-height:1}
-.tab.on{color:var(--accent);font-weight:700}
-.tab .dot{position:absolute;margin-left:18px;margin-top:-2px;min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:var(--accent);color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.tabs{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:460px;display:grid;grid-template-columns:repeat(4,1fr);background:var(--bg);border-top:1px solid var(--hair);padding-bottom:env(safe-area-inset-bottom,0);z-index:50}
+.tab{padding:10px 4px 12px;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;font-weight:500;color:var(--dim);position:relative}
+.tab .cjk{font-size:20px;font-weight:600;line-height:1}
+.tab.on{color:var(--accent)}
+.tab .n{position:absolute;top:6px;left:calc(50% + 10px);font-size:10px;font-weight:700;color:var(--accent)}
+
+/* ── bars, ring ── */
+.line{height:3px;border-radius:2px;background:var(--hair);overflow:hidden}
+.line>i{display:block;height:100%;background:var(--accent);border-radius:2px;transition:width .4s}
+.ring svg{transform:rotate(-90deg);display:block}
 
 /* ── home ── */
-.hero{position:relative;overflow:hidden;border-radius:20px;padding:20px;background:linear-gradient(150deg,color-mix(in srgb,var(--accent) 22%,var(--card)),var(--card));border:1px solid color-mix(in srgb,var(--accent) 30%,var(--line))}
-.hero .wm{position:absolute;right:-14px;top:-30px;font-family:'Noto Serif SC',serif;font-weight:700;font-size:170px;color:var(--accent);opacity:.08;pointer-events:none;line-height:1}
-.ring{position:relative;width:92px;height:92px;flex-shrink:0}
-.ring svg{transform:rotate(-90deg)}
-.ring .c{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
-.ring .n{font-family:'Crimson Pro',serif;font-size:26px;font-weight:700;line-height:1}
-.ring .d{font-size:10px;color:var(--dim)}
-.week{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;text-align:center}
-.week .d{font-size:11px;color:var(--dim)}
-.week .b{width:30px;height:30px;margin:4px auto 0;border-radius:50%;border:1.5px dashed var(--line2);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700}
-.week .b.ok{border:none;background:var(--green);color:#fff}
-.week .b.today{border-style:solid;border-color:var(--accent)}
-.deck{display:flex;align-items:center;gap:12px;padding:12px;border-radius:14px;background:var(--card);border:1px solid var(--line);cursor:pointer;transition:border-color .2s,transform .1s;width:100%;text-align:left}
-.deck:hover{border-color:var(--line2)}
-.deck:active{transform:scale(.99)}
-.deck .ic{width:44px;height:44px;border-radius:12px;background:var(--accent-soft);color:var(--accent);display:flex;align-items:center;justify-content:center;font-family:'Noto Serif SC',serif;font-size:22px;font-weight:700;flex-shrink:0}
-.deck .nm{font-weight:600;font-size:15px}
-.deck .mt{font-size:12px;color:var(--dim);margin:2px 0 6px}
-.due{font-size:12px;font-weight:700;padding:3px 9px;border-radius:999px;background:var(--accent);color:#fff;white-space:nowrap}
-.due.zero{background:var(--card2);color:var(--dim);border:1px solid var(--line)}
+.goal{display:flex;align-items:center;gap:20px}
+.goal .num{font-family:'Crimson Pro',serif;font-size:40px;font-weight:700;line-height:1}
+.week{display:flex;justify-content:space-between}
+.week div{display:flex;flex-direction:column;align-items:center;gap:8px;font-size:12px;color:var(--dim);width:32px}
+.week i{width:10px;height:10px;border-radius:50%;background:var(--hair)}
+.week i.ok{background:var(--accent)}
+.week .today{color:var(--text);font-weight:600}
+.deck{display:flex;align-items:center;gap:16px;padding:16px 0;width:100%;text-align:left}
+.deck .g{font-family:'Noto Serif SC',serif;font-size:26px;font-weight:600;width:34px;text-align:center;color:var(--muted);flex-shrink:0}
+.deck:hover .g{color:var(--accent)}
+.deck .nm{font-size:16px;font-weight:600}
+.deck .mt{font-size:13px;color:var(--dim);margin:2px 0 8px}
+.deck .due{font-size:13px;font-weight:600;color:var(--accent);white-space:nowrap}
+.deck .due.z{color:var(--dim);font-weight:500}
+
+/* ── numbers row (replaces stat boxes) ── */
+.nums{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.nums.two{grid-template-columns:repeat(2,1fr);row-gap:22px}
+.nums .v{font-family:'Crimson Pro',serif;font-size:34px;font-weight:700;line-height:1}
+.nums .l{font-size:13px;color:var(--dim);margin-top:4px}
 
 /* ── chapters ── */
-.chgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px}
-.ch{border:1.5px solid var(--line);background:var(--card);border-radius:12px;padding:10px 8px;cursor:pointer;text-align:center}
-.ch.on{border-color:var(--accent);background:var(--accent-soft)}
-.ch .t{font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ch .s{font-size:11px;color:var(--dim);margin:2px 0 6px}
+.chs{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:8px}
+.chs .btn{height:auto;padding:12px 8px 10px;flex-direction:column;gap:3px;align-items:stretch;text-align:center}
+.chs .btn b{font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chs .btn small{font-size:12px;color:var(--dim);font-weight:500}
+.chs .btn.on small{color:inherit;opacity:.8}
 
-/* ── session ── */
-.sess{min-height:100vh;display:flex;flex-direction:column}
-.sess-top{display:flex;align-items:center;gap:12px;padding:12px 16px}
-.sess-top .bar{flex:1;height:8px}
-.sess-top .bar>i{background:linear-gradient(90deg,var(--accent),var(--green))}
-.sess-count{font-size:13px;color:var(--dim);min-width:44px;text-align:right;font-variant-numeric:tabular-nums}
-.sess-body{flex:1;padding:4px 16px 190px;display:flex;flex-direction:column;gap:12px}
-.face{background:var(--gold-bg);border:2.5px solid var(--gold-line);border-radius:20px;padding:26px 18px 22px;text-align:center;position:relative;animation:slideIn .25s ease-out both}
-.face .tag{position:absolute;top:10px;left:12px;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--gold-sub)}
-.face .spk{position:absolute;top:8px;right:8px}
-.big-hz{font-family:'Noto Serif SC',serif;font-weight:700;color:var(--accent);line-height:1.15;word-break:keep-all}
+/* ── study session ── */
+.sess-top{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--bg)}
+.sess-top .line{flex:1}
+.sess-top .c{font-size:13px;color:var(--dim);min-width:46px;text-align:right;font-variant-numeric:tabular-nums}
+.stage{padding:8px 24px 220px;animation:inR .25s ease-out both}
+.prompt{min-height:38vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:10px;padding:12px 0}
+.prompt .tag{font-size:12px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--dim)}
+.prompt .tag.new{color:var(--accent)}
+.hz{font-family:'Noto Serif SC',serif;font-weight:600;color:var(--text);line-height:1.1;letter-spacing:.02em}
 .py{font-family:'Crimson Pro','Noto Sans',serif;font-style:italic;font-weight:500}
-.mean{font-family:'Crimson Pro',serif;font-size:26px;font-weight:600;color:var(--gold-text);line-height:1.2}
-.mr{font-size:15px;color:var(--gold-sub);margin-top:2px}
-.ans{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:12px;animation:up .3s ease-out both}
-.ans-main{text-align:center}
-.ans-main .mean{color:var(--text)}
-.ans-main .mr{color:var(--dim)}
-.brk{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
-.brk .c{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:12px;background:var(--card2);border:1px solid var(--line);text-align:left}
-.brk .c .cjk{font-size:24px;font-weight:700;color:var(--accent)}
-.brk .c .i{font-size:11px;color:var(--dim);line-height:1.35;max-width:140px}
-.brk .c .i b{color:var(--muted);font-weight:600}
-.note{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:12px;font-size:13px;line-height:1.45}
-.note .g{font-family:'Noto Serif SC',serif;font-size:18px;font-weight:700;line-height:1.1}
-.note.tone{background:color-mix(in srgb,var(--green) 12%,transparent);color:var(--text)}
-.note.tone .g{color:var(--green)}
-.note.jp{background:color-mix(in srgb,var(--purple) 12%,transparent)}
-.note.jp .g{color:var(--purple)}
-.note.hint{background:color-mix(in srgb,var(--amber) 12%,transparent)}
-.note.hint .g{color:var(--amber)}
-.hintbtn{align-self:center;border:1px dashed var(--line2);background:transparent;color:var(--muted);border-radius:999px;padding:8px 16px;font-size:14px;cursor:pointer}
-.hintbtn:hover{color:var(--text)}
-.writer-wrap{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:12px;display:flex;flex-direction:column;align-items:center;gap:8px}
-.writer-row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
-.writer-box{background:#fffdf8;border-radius:12px;border:1px solid #e0d8c8;position:relative}
-.writer-box.done{outline:2px solid var(--green)}
-.writer-box.cur{outline:2px solid var(--accent)}
-.writer-msg{font-size:13px;color:var(--dim);text-align:center}
+.meaning{font-family:'Crimson Pro',serif;font-weight:600;font-size:30px;line-height:1.2}
+.answer{animation:up .3s ease-out both;text-align:center}
+.answer .meaning{font-size:26px}
+.answer .mr{color:var(--dim);margin-top:2px}
+.facts{margin-top:28px;text-align:left}
+.fact{display:grid;grid-template-columns:78px 1fr;gap:12px;padding:12px 0;font-size:14px}
+.fact>span:first-child{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);padding-top:2px}
+.fact .sub{color:var(--dim);font-size:13px;margin-top:2px}
+.chars>div{display:flex;align-items:baseline;gap:10px}
+.chars>div+div{margin-top:6px}
+.chars .cjk{font-size:22px;font-weight:600}
+.hints{display:flex;flex-direction:column;align-items:center;gap:10px;margin-top:6px}
+.hints .h{font-size:15px;color:var(--muted);animation:up .25s both}
+.writer{display:flex;flex-direction:column;align-items:center;gap:10px;margin:6px 0 4px}
+.writer .row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.writer .box{background:var(--surface);border-radius:14px;transition:box-shadow .2s}
+.writer .box.cur{box-shadow:0 0 0 2px var(--accent)}
+.writer .msg{font-size:13px;color:var(--dim);text-align:center}
+details.so summary{list-style:none;cursor:pointer;font-size:13px;color:var(--dim);text-align:center;padding:14px 0 0}
+details.so summary::-webkit-details-marker{display:none}
 
-.dock{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:460px;background:var(--card);border-top:1px solid var(--line);padding:12px 14px calc(14px + env(safe-area-inset-bottom,0));z-index:60}
-.dock .kbd{font-size:11px;color:var(--dim);text-align:center;margin-top:8px}
+.dock{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:460px;padding:24px 16px calc(16px + env(safe-area-inset-bottom,0));background:linear-gradient(to bottom,transparent,var(--bg) 22px);z-index:60}
+.dock .kbd{font-size:12px;color:var(--dim);text-align:center;margin-top:10px}
 .rate{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
-.rate button{--c:var(--muted);border:1.5px solid color-mix(in srgb,var(--c) 45%,var(--line));background:color-mix(in srgb,var(--c) 12%,var(--card));border-radius:14px;padding:10px 4px 9px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;transition:transform .1s,background .2s}
-.rate button:active{transform:scale(.95)}
-.rate button:hover{background:color-mix(in srgb,var(--c) 22%,var(--card))}
-.rate .n{font-size:15px;font-weight:700;color:var(--c)}
-.rate .iv{font-size:11px;color:var(--dim)}
+.rate .btn{height:60px;flex-direction:column;gap:1px;padding:0 4px;font-size:15px}
+.rate .btn small{font-size:12px;font-weight:500;opacity:.7}
 
 /* ── summary ── */
-.sum{padding:28px 18px 120px;display:flex;flex-direction:column;align-items:center;gap:18px;text-align:center}
-.sum .medal{width:120px;height:120px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Noto Serif SC',serif;font-size:62px;font-weight:700;color:#fff;background:radial-gradient(circle at 35% 30%,color-mix(in srgb,var(--accent) 70%,#fff),var(--accent));box-shadow:0 10px 40px color-mix(in srgb,var(--accent) 40%,transparent);animation:burst .6s cubic-bezier(.2,1.4,.4,1) both}
-.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;width:100%}
-.stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 8px}
-.stat .v{font-family:'Crimson Pro',serif;font-size:28px;font-weight:700;line-height:1}
-.stat .l{font-size:11px;color:var(--dim);margin-top:4px}
-.learned{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
-.learned span{font-family:'Noto Serif SC',serif;font-size:20px;font-weight:600;padding:4px 10px;border-radius:10px;background:var(--card2);border:1px solid var(--line)}
-.learned span.miss{border-color:color-mix(in srgb,var(--t1) 50%,var(--line));color:var(--t1)}
+.seal{width:104px;height:104px;border-radius:18px;background:var(--accent);color:var(--on-accent);display:flex;align-items:center;justify-content:center;font-family:'Noto Serif SC',serif;font-size:58px;font-weight:700;margin:20px auto 22px;animation:stamp .5s cubic-bezier(.2,1.3,.4,1) both}
+.tags{display:flex;flex-wrap:wrap;gap:6px 14px}
+.tags span{font-family:'Noto Serif SC',serif;font-size:22px;font-weight:500}
 
 /* ── progress ── */
-.heat{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
-.heat i{aspect-ratio:1;border-radius:5px;background:var(--line)}
-.fc{display:flex;align-items:flex-end;gap:8px;height:96px}
-.fc .d{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:5px;height:100%}
-.fc .b{width:100%;border-radius:5px;background:color-mix(in srgb,var(--accent) 30%,transparent)}
-.fc .b.on{background:var(--accent)}
-.fc .n{font-size:11px;color:var(--dim)}
-.fc .l{font-size:10px;color:var(--dim)}
-.themes{display:flex;gap:10px;flex-wrap:wrap}
-.themes button{width:44px;height:44px;border-radius:12px;border:2px solid var(--line);cursor:pointer}
-.themes button.on{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
-.switch{width:46px;height:26px;border-radius:13px;background:var(--line);border:none;position:relative;cursor:pointer;flex-shrink:0;transition:background .2s}
-.switch::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:left .2s}
-.switch.on{background:var(--green)}
-.switch.on::after{left:23px}
+.heat{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.heat i{aspect-ratio:1;border-radius:4px;background:var(--surface)}
+.fc{display:flex;align-items:flex-end;gap:10px;height:100px}
+.fc>div{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:6px;height:100%;font-size:12px;color:var(--dim)}
+.fc i{width:100%;border-radius:4px;background:color-mix(in srgb,var(--accent) 35%,transparent)}
+.fc .on i{background:var(--accent)}
+.fc .on{color:var(--text)}
+.setrow{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 0}
+.switch{width:46px;height:28px;border-radius:14px;background:var(--hair);position:relative;flex-shrink:0;transition:background .2s}
+.switch::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;transition:left .2s}
+.switch.on{background:var(--accent)}
+.switch.on::after{left:21px}
+.swatches{display:flex;gap:12px}
+.swatches button{width:36px;height:36px;border-radius:50%;position:relative}
+.swatches button.on::after{content:"";position:absolute;inset:-5px;border-radius:50%;border:2px solid var(--accent)}
 
 /* ── bridge ── */
-.bcard{background:linear-gradient(145deg,color-mix(in srgb,var(--purple) 16%,var(--card)),var(--card));border:1.5px solid color-mix(in srgb,var(--purple) 35%,var(--line));border-radius:20px;padding:22px 18px;animation:slideIn .22s ease-out both}
-.bpair{display:flex;align-items:center;justify-content:center;gap:28px}
-.bpair .col{text-align:center}
-.bpair .k{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--purple);margin-bottom:4px}
-.bpair .cjk{font-size:60px;font-weight:600;line-height:1.1}
+.pair{display:flex;align-items:flex-end;justify-content:center;gap:36px;padding:26px 0 10px;animation:inR .22s ease-out both}
+.pair>div{text-align:center}
+.pair .k{font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin-bottom:8px}
+.pair .cjk{font-size:72px;font-weight:600;line-height:1.05}
+.pair .arrow{color:var(--dim);font-size:20px;padding-bottom:34px}
 
-.empty{text-align:center;padding:40px 16px;color:var(--dim)}
-.empty .cjk{font-size:48px;color:var(--accent);display:block;margin-bottom:10px}
-.banner{font-size:12px;padding:8px 12px;border-radius:10px;background:color-mix(in srgb,var(--amber) 14%,transparent);color:var(--amber);text-align:center}
+.toast{position:fixed;left:50%;bottom:100px;transform:translateX(-50%);background:var(--text);color:var(--bg);padding:10px 16px;border-radius:12px;font-size:14px;z-index:300;animation:up .25s both;white-space:nowrap}
+.notice{font-size:13px;color:var(--muted);padding:12px 0;border-bottom:1px solid var(--hair);margin-bottom:8px}
+.empty{text-align:center;padding:60px 16px;color:var(--dim)}
+.empty .cjk{display:block;font-size:44px;color:var(--accent);margin-bottom:12px}
 </style>
 </head>
-<body data-theme="dark">
+<body data-theme="ink">
 <div id="app"></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
@@ -251,18 +230,18 @@ const MODES = [
   {key:"write",     glyph:"写", label:"Write",     desc:"Write it stroke by stroke"},
 ];
 const THEMES = [
-  {key:"dark",bg:"linear-gradient(135deg,#0f1218,#222838)"},
-  {key:"paper",bg:"linear-gradient(135deg,#f4efe6,#e0d0b0)"},
-  {key:"night",bg:"linear-gradient(135deg,#0a0e1a,#d4a840)"},
-  {key:"jade",bg:"linear-gradient(135deg,#080e0a,#3aba7a)"},
-  {key:"sunset",bg:"linear-gradient(135deg,#1a100a,#d8603f)"},
+  {key:"ink",bg:"linear-gradient(135deg,#121417 50%,#e0714f 50%)"},
+  {key:"paper",bg:"linear-gradient(135deg,#f6f2ea 50%,#b4442b 50%)"},
+  {key:"night",bg:"linear-gradient(135deg,#0d1120 50%,#d9ad4f 50%)"},
+  {key:"jade",bg:"linear-gradient(135deg,#0c1310 50%,#5cc28e 50%)"},
+  {key:"sunset",bg:"linear-gradient(135deg,#1a1310 50%,#f08c5a 50%)"},
 ];
 const SIM = {
-  identical:{label:"Same character",c:"var(--green)"},
-  simplified:{label:"Simplified in Chinese",c:"var(--amber)"},
-  similar_meaning:{label:"Similar meaning",c:"var(--blue)"},
-  different_meaning:{label:"Different meaning",c:"var(--t1)"},
-  no_match:{label:"No kanji match",c:"var(--dim)"},
+  identical:{label:"Same character",short:"Same"},
+  simplified:{label:"Simplified in Chinese",short:"Simplified"},
+  similar_meaning:{label:"Similar meaning",short:"Similar"},
+  different_meaning:{label:"Different meaning",short:"Different"},
+  no_match:{label:"No kanji match",short:"No match"},
 };
 
 /* Offline sample — only used when the database can't be reached */
@@ -356,24 +335,36 @@ function speak(text){
 }
 
 /* ═════════════ SMALL COMPONENTS ═════════════ */
-const Svg=({d,size=20,fill})=><svg width={size} height={size} viewBox="0 0 24 24" fill={fill||"none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">{d}</svg>;
+const Svg=({d,size=20,fill})=><svg width={size} height={size} viewBox="0 0 24 24" fill={fill||"none"} stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">{d}</svg>;
 const I={
   speaker:s=><Svg size={s} d={<><path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M19 5a10 10 0 0 1 0 14"/></>}/>,
   x:s=><Svg size={s} d={<><path d="M18 6 6 18"/><path d="M6 6l12 12"/></>}/>,
   back:s=><Svg size={s} d={<path d="m15 18-6-6 6-6"/>}/>,
-  play:s=><Svg size={s} fill="currentColor" d={<path d="M7 4v16l13-8z"/>}/>,
   next:s=><Svg size={s} d={<path d="m9 18 6-6-6-6"/>}/>,
+  play:s=><Svg size={s} fill="currentColor" d={<path d="M7 4.5v15l12-7.5z"/>}/>,
+  bulb:s=><Svg size={s} d={<><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.4 1 2.3h6c0-.9.4-1.8 1-2.3A7 7 0 0 0 12 2z"/></>}/>,
 };
 
-function Pinyin({text,size=28,style}){
+function Pinyin({text,size=26,style}){
   return <span className="py" style={{fontSize:size,...style}}>{(text||"").split(/(\s+)/).map((p,i)=>/\s+/.test(p)?p:<span key={i} style={{color:`var(--t${toneOf(p)})`}}>{p}</span>)}</span>;
 }
-function Ring({value,max,size=92,stroke=9,children}){
+function Ring({value,max,size=96,stroke=6,children}){
   const r=(size-stroke)/2,c=2*Math.PI*r,p=Math.min(1,max?value/max:0);
-  return <div className="ring" style={{width:size,height:size}}>
-    <svg width={size} height={size}><circle cx={size/2} cy={size/2} r={r} fill="none" stroke="var(--line)" strokeWidth={stroke}/>
-      <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={p>=1?"var(--green)":"var(--accent)"} strokeWidth={stroke} strokeLinecap="round" strokeDasharray={c} strokeDashoffset={c*(1-p)} style={{transition:"stroke-dashoffset .6s"}}/></svg>
-    <div className="c">{children}</div></div>;
+  return <div className="ring" style={{position:"relative",width:size,height:size,flexShrink:0}}>
+    <svg width={size} height={size}><circle cx={size/2} cy={size/2} r={r} fill="none" stroke="var(--hair)" strokeWidth={stroke}/>
+      <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="var(--accent)" strokeWidth={stroke} strokeLinecap="round" strokeDasharray={c} strokeDashoffset={c*(1-p)} style={{transition:"stroke-dashoffset .6s"}}/></svg>
+    <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}>{children}</div></div>;
+}
+function Head({glyph,title,sub,right,onBack}){
+  return <div className="head up">
+    {onBack?<button className="ibtn" style={{marginLeft:-10}} onClick={onBack} aria-label="Back">{I.back(22)}</button>:<div className="g">{glyph}</div>}
+    <div style={{minWidth:0}}><div className="t">{title}</div>{sub&&<div className="s">{sub}</div>}</div>
+    {right&&<div className="r">{right}</div>}
+  </div>;
+}
+function Sec({title,aside,children,delay=0,style}){
+  return <section className="sec up" style={{animationDelay:delay+"ms",...style}}>
+    {title&&<div className="sec-t"><span>{title}</span>{aside&&<span className="aside">{aside}</span>}</div>}{children}</section>;
 }
 function Toast({msg}){return msg?<div className="toast">{msg}</div>:null}
 
@@ -390,6 +381,7 @@ function deckStats(srs,srcId,total,now=Date.now()){
   return{seen,due,known,fresh:Math.max(0,(total||0)-seen)};
 }
 
+
 /* ═════════════ HOME ═════════════ */
 function Home({sources,srs,log,goal,lastDeckId,onOpenDeck,onQuickStart,offline}){
   const today=log[dayKey()]||{reviews:0};
@@ -400,55 +392,55 @@ function Home({sources,srs,log,goal,lastDeckId,onOpenDeck,onQuickStart,offline})
   const done=today.reviews>=goal;
   const days=[...Array(7)].map((_,i)=>{const t=Date.now()-(6-i)*DAY;return{d:"SMTWTFS"[new Date(t).getDay()],ok:(log[dayKey(t)]?.reviews||0)>0,today:i===6}});
   const greet=(()=>{const h=new Date().getHours();return h<12?"早上好":h<18?"下午好":"晚上好"})();
+  const mins=Math.max(1,Math.ceil(Math.min(SESSION_SIZE,(st?.due||0)+Math.min(st?.fresh||0,NEW_PER_SESSION)||SESSION_SIZE)*12/60));
 
-  return <div className="page">
-    {offline&&<div className="banner">Database unreachable — showing an offline sample deck.</div>}
-    <div className="row up" style={{justifyContent:"space-between"}}>
-      <div><div className="cjk" style={{fontSize:15,color:"var(--muted)"}}>{greet}</div><div className="h1">Ready to study?</div></div>
-      <div style={{textAlign:"center"}}>
-        <div className="cjk" style={{fontSize:26,fontWeight:700,color:streak?"var(--accent)":"var(--dim)",lineHeight:1}}>火 {streak}</div>
-        <div className="sub" style={{fontSize:11}}>day streak</div>
-      </div>
-    </div>
+  return <div className="screen">
+    {offline&&<div className="notice">Database unreachable — showing an offline sample deck.</div>}
+    <Head glyph="学" title={greet} sub="Ready for today's practice?"
+      right={<><div className="cjk acc" style={{fontSize:22,fontWeight:600,lineHeight:1}}>火 {streak}</div><div className="dim small">day streak</div></>}/>
 
-    {last&&<div className="hero up" style={{animationDelay:"40ms"}}>
-      <div className="wm">{done?"好":"学"}</div>
-      <div className="row" style={{position:"relative",alignItems:"center"}}>
-        <Ring value={today.reviews} max={goal}><div className="n">{today.reviews}</div><div className="d">of {goal} today</div></Ring>
-        <div style={{flex:1,minWidth:0}}>
-          <div className="lbl" style={{color:"var(--accent)"}}>{done?"Goal reached 🎉":"Today's goal"}</div>
-          <div className="serif" style={{fontSize:20,fontWeight:700,margin:"2px 0 4px"}}>{done?"Great work — keep the streak going":`${goal-today.reviews} cards to go`}</div>
-          <div className="sub">{last.label} · <b style={{color:st.due?"var(--accent)":"var(--dim)"}}>{st.due} due</b> · {Math.min(st.fresh,NEW_PER_SESSION)} new</div>
+    {last&&<Sec title="Today" delay={40}>
+      <div className="goal">
+        <Ring value={today.reviews} max={goal}><div className="serif" style={{fontSize:26,fontWeight:700,lineHeight:1}}>{today.reviews}</div><div className="dim" style={{fontSize:11}}>of {goal}</div></Ring>
+        <div style={{minWidth:0}}>
+          <div className="serif" style={{fontSize:22,fontWeight:700,lineHeight:1.15}}>{done?"Daily goal reached":`${goal-today.reviews} cards to go`}</div>
+          <div className="muted small" style={{marginTop:4}}>{last.label} · <span className={st.due?"acc":""}>{st.due} due</span> · {Math.min(st.fresh,NEW_PER_SESSION)} new</div>
         </div>
       </div>
-      <button className="btn btn-primary" style={{width:"100%",marginTop:16,position:"relative"}} onClick={()=>onQuickStart(last)}>
-        {I.play(16)} {st.due||st.fresh?(done?"Practice more":"Start session"):"Extra practice"} <span style={{opacity:.75,fontWeight:500,fontSize:14}}>· ~{Math.ceil(Math.min(SESSION_SIZE,(st.due+Math.min(st.fresh,NEW_PER_SESSION))||SESSION_SIZE)*12/60)} min</span>
-      </button>
-    </div>}
+      <button className="btn primary full" style={{marginTop:22}} onClick={()=>onQuickStart(last)}>
+        {I.play(15)} {st.due||st.fresh?(done?"Practice more":"Start session"):"Extra practice"}<span style={{opacity:.7,fontWeight:500}}>· {mins} min</span></button>
+    </Sec>}
 
-    <div className="card up" style={{animationDelay:"80ms"}}>
-      <div className="lbl" style={{marginBottom:6}}>This week</div>
-      <div className="week">{days.map((d,i)=><div key={i}><div className="d">{d.d}</div><div className={"b"+(d.ok?" ok":"")+(d.today&&!d.ok?" today":"")}>{d.ok?"✓":""}</div></div>)}</div>
-    </div>
+    <Sec title="This week" delay={80}>
+      <div className="week">{days.map((d,i)=><div key={i} className={d.today?"today":""}>{d.d}<i className={d.ok?"ok":""}/></div>)}</div>
+    </Sec>
 
-    <div className="row up" style={{justifyContent:"space-between",animationDelay:"120ms",marginTop:4}}>
-      <div className="lbl">Your decks</div>{totalDue>0&&<div className="sub">{totalDue} due across all decks</div>}
-    </div>
-    {sources.map((s,i)=><DeckRow key={s.id} s={s} srs={srs} onClick={()=>onOpenDeck(s)} delay={140+i*30}/>)}
+    <Sec title="Decks" aside={totalDue?`${totalDue} due`:null} delay={120}>
+      <div className="list">{sources.map(s=><DeckRow key={s.id} s={s} srs={srs} onClick={()=>onOpenDeck(s)}/>)}</div>
+    </Sec>
   </div>;
 }
-function DeckRow({s,srs,onClick,delay=0}){
+function DeckRow({s,srs,onClick}){
   const st=deckStats(srs,s.id,s.word_count);
-  const pct=s.word_count?st.known/s.word_count*100:0, seenPct=s.word_count?st.seen/s.word_count*100:0;
-  return <button className="deck up" style={{animationDelay:delay+"ms"}} onClick={onClick}>
-    <div className="ic">{s.icon||"字"}</div>
+  const pct=s.word_count?st.seen/s.word_count*100:0;
+  return <button className="deck" onClick={onClick}>
+    <div className="g">{s.icon||"字"}</div>
     <div style={{flex:1,minWidth:0}}>
       <div className="nm">{s.label}</div>
-      <div className="mt">{st.known} known · {st.seen-st.known} learning · {st.fresh} new</div>
-      <div className="bar" style={{position:"relative"}}><i style={{width:seenPct+"%",background:"color-mix(in srgb,var(--green) 35%,transparent)",position:"absolute"}}/><i style={{width:pct+"%",position:"relative"}}/></div>
+      <div className="mt">{st.seen?`${st.known} known · ${st.seen-st.known} learning · `:""}{st.fresh} new</div>
+      <div className="line"><i style={{width:pct+"%"}}/></div>
     </div>
-    <span className={"due"+(st.due?"":" zero")}>{st.due?st.due+" due":st.seen?"✓":"Start"}</span>
+    <span className={"due"+(st.due?"":" z")}>{st.due?st.due+" due":!st.seen?"Start":st.fresh?"Continue":"Done"}</span>
   </button>;
+}
+function DeckList({sources,srs,onOpen}){
+  const cats=[...new Set(sources.map(s=>s.category||"Other"))];
+  return <div className="screen">
+    <Head glyph="书" title="Decks" sub="Choose a deck, then a chapter or the whole set"/>
+    {cats.map((c,i)=><Sec key={c} title={c} delay={40+i*40}>
+      <div className="list">{sources.filter(s=>(s.category||"Other")===c).map(s=><DeckRow key={s.id} s={s} srs={srs} onClick={()=>onOpen(s)}/>)}</div>
+    </Sec>)}
+  </div>;
 }
 
 /* ═════════════ DECK DETAIL ═════════════ */
@@ -458,42 +450,38 @@ function DeckDetail({src,srs,mode,setMode,onBack,onStart}){
   const chapters=useMemo(()=>{
     if(!data)return[];const m=new Map();
     data.words.forEach(w=>{const k=w.lecture||"—";if(!m.has(k))m.set(k,[]);m.get(k).push(w)});
-    return[...m.entries()].map(([k,ws])=>({k,ws,known:ws.filter(w=>isKnown(srs[w.id])).length,seen:ws.filter(w=>srs[w.id]).length,due:ws.filter(w=>isDue(srs[w.id])).length}));
+    return[...m.entries()].map(([k,ws])=>({k,ws,seen:ws.filter(w=>srs[w.id]).length,due:ws.filter(w=>isDue(srs[w.id])).length}));
   },[data,srs]);
   const st=deckStats(srs,src.id,data?data.words.length:src.word_count);
   const pool=chapter?chapters.find(c=>c.k===chapter)?.ws:data?.words;
+  const m=MODES.find(x=>x.key===mode);
 
-  return <div className="page" style={{paddingBottom:120}}>
-    <div className="row up"><button className="icon-btn" onClick={onBack} aria-label="Back">{I.back(18)}</button>
-      <div style={{flex:1,minWidth:0}}><div className="h1" style={{fontSize:24}}>{src.label}</div><div className="sub">{src.category} · {data?data.words.length:src.word_count} words</div></div>
-      <div className="cjk" style={{fontSize:34,fontWeight:700,color:"var(--accent)"}}>{src.icon}</div></div>
+  return <div className="screen">
+    <Head onBack={onBack} title={src.label} sub={`${src.category} · ${data?data.words.length:src.word_count} words`}/>
 
-    <div className="stats up" style={{animationDelay:"40ms"}}>
-      <div className="stat"><div className="v" style={{color:"var(--accent)"}}>{st.due}</div><div className="l">Due now</div></div>
-      <div className="stat"><div className="v" style={{color:"var(--amber)"}}>{st.seen-st.known}</div><div className="l">Learning</div></div>
-      <div className="stat"><div className="v" style={{color:"var(--green)"}}>{st.known}</div><div className="l">Known</div></div>
-    </div>
+    <Sec delay={40} style={{marginTop:24}}>
+      <div className="nums">
+        <div><div className="v acc">{st.due}</div><div className="l">Due now</div></div>
+        <div><div className="v">{st.seen-st.known}</div><div className="l">Learning</div></div>
+        <div><div className="v">{st.known}</div><div className="l">Known</div></div>
+      </div>
+    </Sec>
 
-    <div className="card up" style={{animationDelay:"80ms"}}>
-      <div className="lbl" style={{marginBottom:10}}>Practice mode</div>
-      <div className="seg">{MODES.map(m=><button key={m.key} className={mode===m.key?"on":""} onClick={()=>setMode(m.key)}><span className="cjk">{m.glyph}</span>{m.label}</button>)}</div>
-      <div className="sub" style={{marginTop:8,textAlign:"center"}}>{MODES.find(m=>m.key===mode).desc}</div>
-    </div>
+    <Sec title="Practice mode" aside={m.desc} delay={80}>
+      <div className="btns">{MODES.map(x=><button key={x.key} className={"btn sm"+(mode===x.key?" on":"")} onClick={()=>setMode(x.key)}><span className="cjk">{x.glyph}</span>{x.label}</button>)}</div>
+    </Sec>
 
-    {err&&<div className="banner">Couldn't load words: {err}</div>}
+    {err&&<div className="notice" style={{marginTop:24}}>Couldn't load words: {err}</div>}
     {!data&&!err&&<div className="empty"><span className="cjk">学</span>Loading {src.label}…</div>}
-    {data&&<div className="card up" style={{animationDelay:"120ms"}}>
-      <div className="row" style={{justifyContent:"space-between",marginBottom:10}}><div className="lbl">Chapters</div>
-        {chapter&&<button className="chip" style={{cursor:"pointer"}} onClick={()=>setChapter(null)}>All chapters ✕</button>}</div>
-      <div className="chgrid">{chapters.map(c=><div key={c.k} className={"ch"+(chapter===c.k?" on":"")} onClick={()=>setChapter(chapter===c.k?null:c.k)}>
-        <div className={"t"+(/\p{Script=Han}/u.test(c.k)?" cjk":"")}>{c.k}</div>
-        <div className="s">{c.ws.length} word{c.ws.length===1?"":"s"}{c.due?` · ${c.due} due`:""}</div>
-        <div className="bar" style={{height:4}}><i style={{width:(c.known/c.ws.length*100)+"%"}}/></div></div>)}</div>
-    </div>}
+    {data&&<Sec title="Chapters" aside={chapter?<button className="acc" onClick={()=>setChapter(null)}>Show all</button>:`${chapters.length} chapters`} delay={120}>
+      <div className="chs">{chapters.map(c=><button key={c.k} className={"btn"+(chapter===c.k?" on":"")} onClick={()=>setChapter(chapter===c.k?null:c.k)}>
+        <b className={/\p{Script=Han}/u.test(c.k)?"cjk":""}>{c.k}</b>
+        <small>{c.due?`${c.due} due`:`${c.seen}/${c.ws.length}`}</small>
+        <div className="line" style={{marginTop:4}}><i style={{width:(c.seen/c.ws.length*100)+"%"}}/></div></button>)}</div>
+    </Sec>}
 
     {data&&<div className="dock">
-      <button className="btn btn-primary" style={{width:"100%"}} onClick={()=>onStart(src,data,pool,mode)}>
-        {I.play(16)} Start {chapter?`“${chapter}”`:"session"} · {MODES.find(m=>m.key===mode).label}</button>
+      <button className="btn primary full" onClick={()=>onStart(src,data,pool,mode)}>{I.play(15)} Start {chapter?`chapter ${chapter}`:"session"} · {m.label}</button>
     </div>}
   </div>;
 }
@@ -515,21 +503,21 @@ function buildQueue(pool,srs,{size=SESSION_SIZE,newMax=NEW_PER_SESSION}={}){
   return{queue:out,extra};
 }
 
+
 /* ═════════════ STROKE WRITER (Hanzi Writer) ═════════════ */
+const cssVar=n=>getComputedStyle(document.body).getPropertyValue(n).trim();
 function StrokeQuiz({chars,onComplete,revealed}){
   const ref=useRef(null),[cur,setCur]=useState(0),[mistakes,setMistakes]=useState(0),[failed,setFailed]=useState(!window.HanziWriter);
-  const size=chars.length>2?96:chars.length===2?132:180;
+  const size=chars.length>2?96:chars.length===2?136:200;
   useEffect(()=>{
     if(!window.HanziWriter||!ref.current)return;
-    const boxes=[...ref.current.querySelectorAll(".writer-box")];const writers=[];
-    boxes.forEach((el,i)=>{el.innerHTML="";
-      const w=HanziWriter.create(el,chars[i],{width:size,height:size,padding:8,showOutline:revealed,showCharacter:revealed,strokeColor:"#c4553a",outlineColor:"#e8e0d0",drawingColor:"#333",highlightColor:"#3dbb8a",strokeAnimationSpeed:1.4,delayBetweenStrokes:120,
-        onLoadCharDataError:()=>setFailed(true)});
-      writers.push(w);
-    });
-    if(revealed){ // replay stroke order for the answer
-      (async()=>{for(const w of writers){try{await w.animateCharacter()}catch(e){}}})();
-    }else{
+    const ink=cssVar("--text"),acc=cssVar("--accent"),hair=cssVar("--hair");
+    const writers=[...ref.current.querySelectorAll(".box")].map((el,i)=>{el.innerHTML="";
+      return HanziWriter.create(el,chars[i],{width:size,height:size,padding:10,showOutline:revealed,showCharacter:revealed,
+        strokeColor:ink,outlineColor:hair,drawingColor:acc,highlightColor:acc,strokeAnimationSpeed:1.4,delayBetweenStrokes:120,
+        onLoadCharDataError:()=>setFailed(true)})});
+    if(revealed){(async()=>{for(const w of writers){try{await w.animateCharacter()}catch(e){}}})()}
+    else{
       let i=0;const go=()=>{if(i>=writers.length){onComplete&&onComplete();return}setCur(i);
         writers[i].quiz({showHintAfterMisses:2,highlightOnComplete:true,onMistake:()=>setMistakes(m=>m+1),onComplete:()=>{i++;setTimeout(go,300)}})};
       go();
@@ -537,10 +525,10 @@ function StrokeQuiz({chars,onComplete,revealed}){
     return()=>writers.forEach(w=>{try{w.cancelQuiz&&w.cancelQuiz()}catch(e){}});
   },[chars.join(""),revealed]);
   if(!chars.length)return null;
-  if(failed)return <div className="writer-wrap"><div className="writer-msg">Stroke data couldn't load (offline?). Write it on paper, then tap Show answer.</div></div>;
-  return <div className="writer-wrap" ref={ref}>
-    <div className="writer-row">{chars.map((c,i)=><div key={c+i} className={"writer-box"+(!revealed&&i<cur?" done":"")+(!revealed&&i===cur?" cur":"")} style={{width:size,height:size}}/>)}</div>
-    <div className="writer-msg">{revealed?"Stroke order":mistakes?`${mistakes} stroke${mistakes>1?"s":""} off — hints appear after 2 misses`:"Write each character — strokes are checked as you go"}</div>
+  if(failed)return <div className="writer"><div className="msg">Stroke data couldn't load (offline?). Write it on paper, then tap Show answer.</div></div>;
+  return <div className="writer" ref={ref}>
+    <div className="row">{chars.map((c,i)=><div key={c+i} className={"box"+(!revealed&&i===cur?" cur":"")} style={{width:size,height:size}}/>)}</div>
+    <div className="msg">{revealed?"Stroke order":mistakes?`${mistakes} stroke${mistakes>1?"s":""} off · a hint appears after 2 misses`:"Write each character · strokes are checked as you go"}</div>
   </div>;
 }
 
@@ -562,9 +550,9 @@ function Session({src,deck,pool,mode,srs,autoSpeak,onRate,onExit,onFinish}){
 
   const finish=useCallback(()=>{
     const firsts=[...results.values()];
+    const uniq=(pred)=>queue.filter((x,j,a)=>pred(x)&&a.findIndex(y=>y.id===x.id)===j);
     onFinish({reviewed:firsts.length,correct:firsts.filter(g=>g>0).length,secs:Math.round((Date.now()-t0)/1000),
-      newLearned:queue.filter((x,j,a)=>wasNew.has(x.id)&&a.findIndex(y=>y.id===x.id)===j),
-      missed:queue.filter((x,j,a)=>results.get(x.id)===0&&a.findIndex(y=>y.id===x.id)===j),extra:init.extra});
+      newLearned:uniq(x=>wasNew.has(x.id)),missed:uniq(x=>results.get(x.id)===0),extra:init.extra});
   },[queue]);
 
   const rate=g=>{
@@ -578,7 +566,6 @@ function Session({src,deck,pool,mode,srs,autoSpeak,onRate,onExit,onFinish}){
 
   useEffect(()=>{
     const k=e=>{
-      if(e.target.tagName==="INPUT")return;
       if((e.key===" "||e.key==="Enter")&&!revealed){e.preventDefault();setRevealed(true)}
       else if(revealed&&["1","2","3","4"].includes(e.key))rate(+e.key-1);
       else if(e.key==="s"||e.key==="S")speak(w?.hanzi);
@@ -588,75 +575,72 @@ function Session({src,deck,pool,mode,srs,autoSpeak,onRate,onExit,onFinish}){
     window.addEventListener("keydown",k);return()=>window.removeEventListener("keydown",k);
   });
 
-  if(!w)return <div className="sess"><div className="empty" style={{marginTop:80}}><span className="cjk">空</span>No words to study here yet.<br/><br/><button className="btn btn-ghost" style={{margin:"0 auto"}} onClick={onExit}>Back</button></div></div>;
+  if(!w)return <div className="screen"><div className="empty"><span className="cjk">空</span>No words to study here yet.<br/><br/><button className="btn" onClick={onExit}>Back</button></div></div>;
 
   const chars=hanChars(w.hanzi);
-  const hzSize=chars.length<=1?96:chars.length===2?80:chars.length===3?62:Math.max(36,200/chars.length);
+  const hzSize=chars.length<=1?120:chars.length===2?96:chars.length===3?72:Math.max(40,240/chars.length);
   const isNew=!card&&wasNew.has(w.id);
-  const sandhi=(deck.sandhi[w.id]||[]).find(t=>t.modified_pinyin&&t.original_pinyin&&t.modified_pinyin!==t.original_pinyin)||(deck.sandhi[w.id]||[])[0];
+  const sandhi=(deck.sandhi[w.id]||[]).find(t=>t.modified_pinyin!==t.original_pinyin)||(deck.sandhi[w.id]||[])[0];
   const rule=sandhi?deck.rules[sandhi.rule_id]:null;
   const jp=chars.map(c=>{const h=deck.chars[c];const b=h&&deck.bridge[h.id];return b&&b.japanese_kanji?{c,...b}:null}).filter(Boolean);
-  const hints=[w.hint&&{g:"提",t:w.hint},mode!=="recognize"&&{g:"拼",t:<Pinyin text={w.pinyin} size={20}/>},mode==="recall"&&chars.length>1&&{g:"首",t:<>Starts with <span className="cjk" style={{fontSize:18,color:"var(--accent)"}}>{chars[0]}</span></>}].filter(Boolean);
+  const hints=[w.hint&&w.hint,mode!=="recognize"&&<Pinyin text={w.pinyin} size={20}/>,mode==="recall"&&chars.length>1&&<>Starts with <span className="cjk" style={{fontSize:20}}>{chars[0]}</span></>].filter(Boolean);
+  const speakBtn=<button className="ibtn" onClick={()=>speak(w.hanzi)} aria-label="Play pronunciation">{I.speaker(22)}</button>;
+  const tag=<div className={"tag"+(isNew?" new":"")}>{isNew?"New word":MODES.find(m=>m.key===mode).label}</div>;
+  const Hz=()=><div className="hz" style={{fontSize:hzSize}}>{w.hanzi}</div>;
 
-  const Speak=({big})=><button className="icon-btn spk" style={big?{width:64,height:64,borderRadius:"50%",background:"var(--accent)",color:"#fff",border:"none",margin:"6px auto"}:{background:"transparent",border:"none",color:"var(--gold-sub)"}} onClick={()=>speak(w.hanzi)} aria-label="Play pronunciation">{I.speaker(big?28:20)}</button>;
-
-  // FRONT of the card
-  const front=<div className="face" key={"f"+i}>
-    <div className="tag">{isNew?"New word":MODES.find(m=>m.key===mode).label}</div>
-    {mode==="recognize"&&<><Speak/><div className="big-hz" style={{fontSize:hzSize}}>{w.hanzi}</div>
-      {revealed&&<div style={{marginTop:6}}><Pinyin text={w.pinyin} size={26}/></div>}</>}
-    {mode==="recall"&&<><div className="mean" style={{fontSize:30,padding:"8px 0"}}>{w.meaning}</div>
-      {revealed&&<div className="big-hz" style={{fontSize:hzSize,marginTop:6,animation:"pop .3s both"}}>{w.hanzi}</div>}</>}
-    {mode==="listen"&&<><Speak big/><div className="sub" style={{color:"var(--gold-sub)"}}>Tap to replay · what did you hear?</div>
-      {revealed&&<div className="big-hz" style={{fontSize:hzSize,marginTop:10,animation:"pop .3s both"}}>{w.hanzi}</div>}</>}
-    {mode==="write"&&<><div className="mean" style={{fontSize:26}}>{w.meaning}</div>
-      <div style={{marginTop:4}}><Pinyin text={w.pinyin} size={22}/></div><Speak/></>}
-  </div>;
-
-  return <div className="sess">
+  return <div>
     <div className="sess-top">
-      <button className="icon-btn" onClick={onExit} aria-label="End session">{I.x(18)}</button>
-      <div className="bar"><i style={{width:(i/queue.length*100)+"%"}}/></div>
-      <div className="sess-count">{i+1} / {queue.length}</div>
+      <button className="ibtn" onClick={onExit} aria-label="End session">{I.x(20)}</button>
+      <div className="line"><i style={{width:(i/queue.length*100)+"%"}}/></div>
+      <div className="c">{i+1} / {queue.length}</div>
     </div>
-    <div className="sess-body">
-      {init.extra&&i===0&&<div className="banner" style={{background:"color-mix(in srgb,var(--green) 14%,transparent)",color:"var(--green)"}}>All caught up! Extra practice on your weakest words.</div>}
-      {front}
+
+    <div className="stage" key={i}>
+      {init.extra&&i===0&&<div className="notice" style={{textAlign:"center"}}>All caught up — extra practice on your weakest words.</div>}
+
+      <div className="prompt" style={mode==="write"?{minHeight:"auto",padding:"28px 0 20px"}:revealed?{minHeight:"auto",paddingTop:20}:null}>
+        {tag}
+        {mode==="recognize"&&<><Hz/>{revealed&&<Pinyin text={w.pinyin} size={28}/>}{speakBtn}</>}
+        {mode==="recall"&&<><div className="meaning">{w.meaning}</div>{revealed&&<><Hz/><Pinyin text={w.pinyin} size={26}/></>}{revealed&&speakBtn}</>}
+        {mode==="listen"&&<>{!revealed&&<button className="btn primary" style={{width:84,height:84,borderRadius:"50%",margin:"12px 0"}} onClick={()=>speak(w.hanzi)} aria-label="Play">{I.speaker(34)}</button>}
+          {!revealed&&<div className="dim small">Tap to replay · what did you hear?</div>}
+          {revealed&&<><Hz/><Pinyin text={w.pinyin} size={26}/>{speakBtn}</>}</>}
+        {mode==="write"&&<><div className="meaning">{w.meaning}</div><Pinyin text={w.pinyin} size={22}/></>}
+      </div>
 
       {mode==="write"&&chars.length>0&&<StrokeQuiz key={w.id+"-"+revealed} chars={chars} revealed={revealed} onComplete={()=>setRevealed(true)}/>}
 
-      {!revealed&&hints.length>0&&<>
-        {hints.slice(0,hint).map((h,j)=><div key={j} className="note hint up"><span className="g">{h.g}</span><div>{h.t}</div></div>)}
-        {hint<hints.length&&<button className="hintbtn" onClick={()=>setHint(h=>h+1)}>💡 Hint {hints.length>1?`(${hint+1}/${hints.length})`:""}</button>}
-      </>}
+      {!revealed&&hints.length>0&&<div className="hints">
+        {hints.slice(0,hint).map((h,j)=><div key={j} className="h">{h}</div>)}
+        {hint<hints.length&&<button className="btn sm text" onClick={()=>setHint(h=>h+1)}>{I.bulb(16)} Hint{hints.length>1?` ${hint+1}/${hints.length}`:""}</button>}
+      </div>}
 
-      {revealed&&<div className="ans">
-        <div className="ans-main">
-          {mode!=="recognize"&&<Pinyin text={w.pinyin} size={26}/>}
-          {mode!=="recall"&&mode!=="write"&&<div className="mean">{w.meaning}</div>}
-          {mode==="recall"||mode==="write"?<div className="mean" style={{fontSize:18,color:"var(--muted)",fontWeight:500}}>{w.meaning}</div>:null}
-          {w.marathi&&<div className="mr">{w.marathi}</div>}
+      {revealed&&<div className="answer">
+        {mode!=="recall"&&mode!=="write"&&<div className="meaning">{w.meaning}</div>}
+        {w.marathi&&<div className="mr">{w.marathi}</div>}
+        <div className="facts list">
+          {chars.some(c=>deck.chars[c])&&<div className="fact"><span>{chars.length>1?"Chars":"Char"}</span><div className="chars">{chars.map((c,j)=>{const h=deck.chars[c];return h?<div key={j}>
+            <span className="cjk">{c}</span><div><Pinyin text={h.pinyin} size={17}/> <span className="muted">{(h.meaning||"").split(/[,;]/).slice(0,2).join(",")}</span>
+            <div className="sub">{h.radical&&<>radical <span className="cjk">{h.radical}</span> · </>}{h.stroke_count} strokes</div></div></div>:null})}</div></div>}
+          {sandhi&&<div className="fact"><span>Tone</span><div>
+            {sandhi.modified_pinyin!==sandhi.original_pinyin?<>Spoken as <Pinyin text={sandhi.modified_pinyin} size={18}/></>:<b style={{fontWeight:600}}>{rule?rule.rule_name:"Tone rule"}</b>}
+            {rule&&<div className="sub">{rule.description}</div>}</div></div>}
+          {jp.length>0&&<div className="fact"><span>Japanese</span><div>{jp.map((b,j)=><div key={j} style={j?{marginTop:6}:null}>
+            <span className="cjk" style={{fontSize:17}}>{b.c} → {b.japanese_kanji}</span> <span className={b.similarity==="identical"?"acc":"muted"} style={{fontSize:13}}>{(SIM[b.similarity]||{label:b.similarity}).label}</span>
+            {b.notes&&<div className="sub">{b.notes}</div>}</div>)}</div></div>}
+          {w.hint&&<div className="fact"><span>Hint</span><div>{w.hint}</div></div>}
         </div>
-        {chars.some(c=>deck.chars[c])&&<div className="brk">{chars.map((c,j)=>{const h=deck.chars[c];return h?<div key={j} className="c"><span className="cjk">{c}</span>
-          <div className="i"><b>{h.pinyin}</b> · {(h.meaning||"").split(/[,;]/).slice(0,2).join(",")}<br/>{h.radical&&<>radical <span className="cjk">{h.radical}</span> · </>}{h.stroke_count} strokes</div></div>:null})}</div>}
-        {sandhi&&<div className="note tone"><span className="g">声</span><div>
-          <b>{rule?rule.rule_name:"Tone change"}</b>{sandhi.modified_pinyin!==sandhi.original_pinyin&&<> — written <i>{sandhi.original_pinyin}</i>, spoken <Pinyin text={sandhi.modified_pinyin} size={16}/></>}
-          {rule&&<div style={{color:"var(--muted)",fontSize:12}}>{rule.description}</div>}</div></div>}
-        {jp.map((b,j)=><div key={j} className="note jp"><span className="g">橋</span><div>
-          <span className="cjk" style={{fontSize:16}}>{b.c} → {b.japanese_kanji}</span> <span style={{color:(SIM[b.similarity]||SIM.no_match).c,fontWeight:600,fontSize:12}}>{(SIM[b.similarity]||{label:b.similarity}).label}</span>
-          {b.notes&&<div style={{color:"var(--muted)",fontSize:12}}>{b.notes}</div>}</div></div>)}
-        {w.hint&&<div className="note hint"><span className="g">提</span><div>{w.hint}</div></div>}
-        {mode!=="write"&&chars.length>0&&window.HanziWriter&&<details><summary className="sub" style={{cursor:"pointer",textAlign:"center"}}>笔 Show stroke order</summary><div style={{marginTop:8}}><StrokeQuiz chars={chars} revealed/></div></details>}
+        {mode!=="write"&&chars.length>0&&window.HanziWriter&&<details className="so"><summary>Show stroke order</summary><div style={{marginTop:12}}><StrokeQuiz chars={chars} revealed/></div></details>}
       </div>}
     </div>
 
     <div className="dock">
       {!revealed?<>
-        <button className="btn btn-primary" style={{width:"100%",padding:16,fontSize:17}} onClick={()=>setRevealed(true)}>{mode==="write"?"Show answer":"Show answer"}</button>
-        <div className="kbd">Space to reveal · H hint · S speak</div>
+        <button className="btn primary full" onClick={()=>setRevealed(true)}>Show answer</button>
+        <div className="kbd">Space reveal · H hint · S speak</div>
       </>:<>
-        <div className="rate">{[["Again","var(--t1)"],["Hard","var(--amber)"],["Good","var(--green)"],["Easy","var(--blue)"]].map(([n,c],g)=>
-          <button key={g} style={{"--c":c}} onClick={()=>rate(g)}><span className="n">{n}</span><span className="iv">{fmtIv(card,g)}</span></button>)}</div>
+        <div className="rate">{["Again","Hard","Good","Easy"].map((n,g)=>
+          <button key={g} className={"btn"+(g===2?" primary":"")} onClick={()=>rate(g)}>{n}<small>{fmtIv(card,g)}</small></button>)}</div>
         <div className="kbd">How well did you know it? · keys 1–4</div>
       </>}
     </div>
@@ -669,25 +653,29 @@ function Summary({res,src,log,goal,streakBefore,onAgain,onDone}){
   const streak=streakOf(log);
   const acc=res.reviewed?Math.round(res.correct/res.reviewed*100):0;
   const glyph=acc>=90?"优":acc>=70?"好":"进";
-  const msg=acc>=90?"Excellent!":acc>=70?"Nice work!":"Progress made!";
-  return <div className="sum">
-    <div className="medal">{glyph}</div>
-    <div><div className="h1">{msg}</div><div className="sub" style={{marginTop:4}}>{src.label} · {Math.floor(res.secs/60)}m {res.secs%60}s</div></div>
-    {streak>streakBefore&&<div className="chip up" style={{fontSize:14,padding:"8px 14px",color:"var(--accent)",borderColor:"var(--accent)"}}><span className="cjk">火</span> Streak extended to {streak} day{streak>1?"s":""}!</div>}
-    <div className="stats up">
-      <div className="stat"><div className="v">{res.reviewed}</div><div className="l">Cards</div></div>
-      <div className="stat"><div className="v" style={{color:acc>=70?"var(--green)":"var(--amber)"}}>{acc}%</div><div className="l">Recalled</div></div>
-      <div className="stat"><div className="v" style={{color:"var(--accent)"}}>{res.newLearned.length}</div><div className="l">New words</div></div>
-    </div>
-    <div className="card up" style={{width:"100%",display:"flex",alignItems:"center",gap:14,textAlign:"left"}}>
-      <Ring value={today.reviews} max={goal} size={64} stroke={7}><div className="n" style={{fontSize:18}}>{Math.min(100,Math.round(today.reviews/goal*100))}%</div></Ring>
-      <div><div style={{fontWeight:600}}>{today.reviews>=goal?"Daily goal complete":"Daily goal"}</div><div className="sub">{today.reviews} / {goal} cards today</div></div>
-    </div>
-    {res.newLearned.length>0&&<div style={{width:"100%"}}><div className="lbl" style={{marginBottom:8}}>New this session</div><div className="learned">{res.newLearned.map(w=><span key={w.id}>{w.hanzi}</span>)}</div></div>}
-    {res.missed.length>0&&<div style={{width:"100%"}}><div className="lbl" style={{marginBottom:8}}>Needs more practice</div><div className="learned">{res.missed.map(w=><span key={w.id} className="miss">{w.hanzi}</span>)}</div></div>}
-    <div className="dock" style={{display:"flex",gap:10}}>
-      <button className="btn btn-ghost" style={{flex:1}} onClick={onDone}>Done</button>
-      <button className="btn btn-primary" style={{flex:1.4}} onClick={onAgain}>{I.play(14)} Keep going</button>
+  const msg=acc>=90?"Excellent":acc>=70?"Nice work":"Progress made";
+  return <div className="screen" style={{textAlign:"center"}}>
+    <div className="seal">{glyph}</div>
+    <div className="serif" style={{fontSize:32,fontWeight:700,lineHeight:1.1}}>{msg}</div>
+    <div className="dim" style={{marginTop:4}}>{src.label} · {Math.floor(res.secs/60)}m {res.secs%60}s</div>
+    {streak>streakBefore&&<div className="acc up" style={{marginTop:14,fontWeight:600}}><span className="cjk">火</span> Streak extended to {streak} day{streak>1?"s":""}</div>}
+
+    <Sec delay={80} style={{textAlign:"left"}}>
+      <div className="nums">
+        <div><div className="v">{res.reviewed}</div><div className="l">Cards</div></div>
+        <div><div className="v">{acc}%</div><div className="l">Recalled</div></div>
+        <div><div className="v acc">{res.newLearned.length}</div><div className="l">New words</div></div>
+      </div>
+    </Sec>
+    <Sec title="Daily goal" aside={`${today.reviews} / ${goal}`} delay={120} style={{textAlign:"left"}}>
+      <div className="line"><i style={{width:Math.min(100,today.reviews/goal*100)+"%"}}/></div>
+    </Sec>
+    {res.newLearned.length>0&&<Sec title="New this session" delay={160} style={{textAlign:"left"}}><div className="tags">{res.newLearned.map(w=><span key={w.id}>{w.hanzi}</span>)}</div></Sec>}
+    {res.missed.length>0&&<Sec title="Needs more practice" delay={200} style={{textAlign:"left"}}><div className="tags">{res.missed.map(w=><span key={w.id} className="acc">{w.hanzi}</span>)}</div></Sec>}
+
+    <div className="dock" style={{display:"flex",gap:8}}>
+      <button className="btn" style={{flex:1}} onClick={onDone}>Done</button>
+      <button className="btn primary" style={{flex:1.5}} onClick={onAgain}>{I.play(14)} Keep going</button>
     </div>
   </div>;
 }
@@ -703,25 +691,31 @@ function Progress({srs,log,goal,setGoal,theme,setTheme,autoSpeak,setAutoSpeak,on
   const mx=Math.max(1,...cells);
   const fc=[...Array(7)].map((_,j)=>{const lo=j===0?0:startOfTomorrow()+(j-1)*DAY,hi=startOfTomorrow()+j*DAY;return{l:j===0?"Today":["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][new Date(lo||Date.now()).getDay()],n:all.filter(c=>c.due>=lo&&c.due<hi).length}});
   const fmx=Math.max(1,...fc.map(f=>f.n));
-  return <div className="page">
-    <div className="up"><div className="h1">Progress</div><div className="sub">Saved on this device</div></div>
-    <div className="stats up" style={{gridTemplateColumns:"repeat(2,1fr)"}}>
-      <div className="stat"><div className="v" style={{color:"var(--accent)"}}><span className="cjk" style={{fontSize:22}}>火</span> {streak}</div><div className="l">Day streak · best {Math.max(best,streak)}</div></div>
-      <div className="stat"><div className="v" style={{color:"var(--green)"}}>{known}</div><div className="l">Words known</div></div>
-      <div className="stat"><div className="v" style={{color:"var(--amber)"}}>{learning}</div><div className="l">Learning</div></div>
-      <div className="stat"><div className="v">{totalReviews}</div><div className="l">Total reviews</div></div>
-    </div>
-    <div className="card up"><div className="lbl" style={{marginBottom:10}}>Last 5 weeks</div>
-      <div className="heat">{cells.map((n,j)=><i key={j} title={n+" reviews"} style={n?{background:`color-mix(in srgb,var(--green) ${25+75*n/mx}%,transparent)`}:null}/>)}</div></div>
-    <div className="card up"><div className="lbl" style={{marginBottom:10}}>Reviews coming up</div>
-      <div className="fc">{fc.map((f,j)=><div key={j} className="d"><div className="n">{f.n}</div><div className={"b"+(j===0?" on":"")} style={{height:Math.max(4,f.n/fmx*60)}}/><div className="l">{f.l}</div></div>)}</div></div>
-    <div className="card up"><div className="lbl" style={{marginBottom:10}}>Daily goal</div>
-      <div className="seg">{[10,20,30,50].map(g=><button key={g} className={goal===g?"on":""} onClick={()=>setGoal(g)}>{g} cards</button>)}</div></div>
-    <div className="card up"><div className="row" style={{justifyContent:"space-between"}}><div><div style={{fontWeight:600}}>Auto-play pronunciation</div><div className="sub">Speak each word when the answer is shown</div></div>
-      <button className={"switch"+(autoSpeak?" on":"")} onClick={()=>setAutoSpeak(!autoSpeak)} aria-label="Toggle auto-play"/></div></div>
-    <div className="card up"><div className="lbl" style={{marginBottom:10}}>Theme</div>
-      <div className="themes">{THEMES.map(t=><button key={t.key} className={theme===t.key?"on":""} style={{background:t.bg}} onClick={()=>setTheme(t.key)} aria-label={t.key}/>)}</div></div>
-    <button className="btn btn-ghost" style={{color:"var(--t1)"}} onClick={onReset}>Reset all progress</button>
+  return <div className="screen">
+    <Head glyph="进" title="Progress" sub="Saved on this device"/>
+    <Sec delay={40} style={{marginTop:24}}>
+      <div className="nums two">
+        <div><div className="v acc"><span className="cjk" style={{fontSize:26}}>火</span> {streak}</div><div className="l">Day streak · best {Math.max(best,streak)}</div></div>
+        <div><div className="v">{known}</div><div className="l">Words known</div></div>
+        <div><div className="v">{learning}</div><div className="l">Learning</div></div>
+        <div><div className="v">{totalReviews}</div><div className="l">Total reviews</div></div>
+      </div>
+    </Sec>
+    <Sec title="Last 5 weeks" delay={80}>
+      <div className="heat">{cells.map((n,j)=><i key={j} title={n+" reviews"} style={n?{background:`color-mix(in srgb,var(--accent) ${30+70*n/mx}%,transparent)`}:null}/>)}</div>
+    </Sec>
+    <Sec title="Coming up" delay={120}>
+      <div className="fc">{fc.map((f,j)=><div key={j} className={j===0?"on":""}>{f.n}<i style={{height:Math.max(3,f.n/fmx*62)}}/>{f.l}</div>)}</div>
+    </Sec>
+    <Sec title="Settings" delay={160}>
+      <div className="list">
+        <div className="setrow"><div>Daily goal</div><div className="btns">{[10,20,30,50].map(g=><button key={g} className={"btn sm"+(goal===g?" on":"")} style={{flex:"none",minWidth:46}} onClick={()=>setGoal(g)}>{g}</button>)}</div></div>
+        <div className="setrow"><div>Auto-play pronunciation<div className="dim small">When the answer is shown</div></div>
+          <button className={"switch"+(autoSpeak?" on":"")} onClick={()=>setAutoSpeak(!autoSpeak)} aria-label="Toggle auto-play"/></div>
+        <div className="setrow"><div>Theme</div><div className="swatches">{THEMES.map(t=><button key={t.key} className={theme===t.key?"on":""} style={{background:t.bg}} onClick={()=>setTheme(t.key)} aria-label={t.key} title={t.key}/>)}</div></div>
+        <div className="setrow"><div>Reset progress<div className="dim small">Clears everything on this device</div></div><button className="btn sm" onClick={onReset}>Reset</button></div>
+      </div>
+    </Sec>
   </div>;
 }
 
@@ -737,35 +731,32 @@ function Bridge(){
   }catch(e){setErr(e.message||String(e))}})()},[]);
   const list=useMemo(()=>items?(filter==="all"?items:items.filter(x=>x.similarity===filter)):[],[items,filter]);
   const counts=useMemo(()=>(items||[]).reduce((a,x)=>{a[x.similarity]=(a[x.similarity]||0)+1;return a},{}),[items]);
-  const b=list[idx%Math.max(1,list.length)];
-  const sim=b?(SIM[b.similarity]||SIM.no_match):null;
-  return <div className="page">
-    <div className="row up"><div className="cjk" style={{fontSize:30,fontWeight:700,color:"var(--purple)"}}>橋</div>
-      <div><div className="h1" style={{fontSize:24}}>Japanese Bridge</div><div className="sub">Use the kanji you know to learn hanzi</div></div></div>
-    {err&&<div className="banner">Couldn't load bridge data: {err}</div>}
+  const n=list.length,b=n?list[idx%n]:null;
+  return <div className="screen">
+    <Head glyph="橋" title="Japanese Bridge" sub="Use the kanji you know to learn hanzi"/>
+    {err&&<div className="notice" style={{marginTop:24}}>Couldn't load bridge data: {err}</div>}
     {!items&&!err&&<div className="empty"><span className="cjk">橋</span>Loading…</div>}
     {items&&<>
-      <div className="seg up" style={{flexWrap:"nowrap",overflowX:"auto"}}>
-        {["all",...Object.keys(SIM).filter(k=>counts[k])].map(k=><button key={k} className={filter===k?"on":""} style={{flex:"0 0 auto",padding:"7px 12px"}} onClick={()=>{setFilter(k);setIdx(0)}}>
-          {k==="all"?"All":SIM[k].label.split(" ")[0]} <span style={{fontSize:11,color:"var(--dim)"}}>{k==="all"?items.length:counts[k]}</span></button>)}
-      </div>
-      {b&&<div className="bcard" key={filter+idx}>
-        <div className="bpair">
-          <div className="col"><div className="k">Chinese</div><div className="cjk" style={{color:"var(--accent)"}}>{b.hanzi}</div><Pinyin text={b.pinyin} size={20}/></div>
-          <div style={{fontSize:22,color:"var(--purple)"}}>⟷</div>
-          <div className="col"><div className="k">Japanese</div><div className="cjk" style={{color:"var(--purple)"}}>{b.japanese_kanji}</div><div className="sub">&nbsp;</div></div>
+      <Sec title="Filter" delay={40}>
+        <div className="btns">{["all",...Object.keys(SIM).filter(k=>counts[k])].map(k=><button key={k} className={"btn sm"+(filter===k?" on":"")} style={{flex:"none"}} onClick={()=>{setFilter(k);setIdx(0)}}>
+          {k==="all"?"All":SIM[k].short}<span style={{opacity:.6,fontWeight:500}}>{k==="all"?items.length:counts[k]}</span></button>)}</div>
+      </Sec>
+      {b&&<Sec title="Pair" aside={`${(idx%n)+1} / ${n}`} delay={80}>
+        <div className="pair" key={filter+idx}>
+          <div><div className="k">Chinese</div><div className="cjk">{b.hanzi}</div><Pinyin text={b.pinyin} size={20}/></div>
+          <div className="arrow">⟷</div>
+          <div><div className="k">Japanese</div><div className="cjk">{b.japanese_kanji}</div><div style={{height:27}}/></div>
         </div>
-        <div style={{textAlign:"center",marginTop:14,paddingTop:14,borderTop:"1px solid var(--line)"}}>
-          <div className="serif" style={{fontSize:20,fontWeight:600}}>{b.meaning}</div>
-          {b.notes&&<div className="sub" style={{marginTop:6,lineHeight:1.5}}>{b.notes}</div>}
-          <div className="chip" style={{marginTop:10,color:sim.c,borderColor:sim.c,fontWeight:700}}>{sim.label}</div>
+        <div style={{textAlign:"center"}}>
+          <div className="meaning" style={{fontSize:24}}>{b.meaning}</div>
+          <div className={b.similarity==="identical"?"acc":"muted"} style={{fontWeight:600,fontSize:14,marginTop:6}}>{(SIM[b.similarity]||{label:b.similarity}).label}</div>
+          {b.notes&&<div className="dim small" style={{marginTop:6}}>{b.notes}</div>}
+          <button className="ibtn" style={{marginTop:8}} onClick={()=>speak(b.hanzi)} aria-label="Play">{I.speaker(22)}</button>
         </div>
-        <div className="row" style={{justifyContent:"center",marginTop:10}}><button className="icon-btn" onClick={()=>speak(b.hanzi)} aria-label="Play">{I.speaker(18)}</button></div>
-      </div>}
-      {list.length>0&&<div className="row" style={{gap:10}}>
-        <button className="btn btn-ghost" style={{flex:1}} onClick={()=>setIdx(i=>(i-1+list.length)%list.length)}>{I.back(16)} Prev</button>
-        <div className="sub" style={{minWidth:70,textAlign:"center"}}>{(idx%list.length)+1} / {list.length}</div>
-        <button className="btn btn-primary" style={{flex:1}} onClick={()=>setIdx(i=>(i+1)%list.length)}>Next {I.next(16)}</button>
+      </Sec>}
+      {n>0&&<div className="btns" style={{marginTop:18}}>
+        <button className="btn" onClick={()=>setIdx(i=>(i-1+n)%n)}>{I.back(18)} Prev</button>
+        <button className="btn primary" onClick={()=>setIdx(i=>(i+1)%n)}>Next {I.next(18)}</button>
       </div>}
     </>}
   </div>;
@@ -779,7 +770,7 @@ function App(){
   const[srs,setSrs]=useState(()=>LS.get("cs2-srs",{}));
   const[log,setLog]=useState(()=>LS.get("cs2-log",{}));
   const[goal,setGoal]=useState(()=>LS.get("cs2-goal",20));
-  const[theme,setTheme]=useState(()=>LS.get("cs2-theme","dark"));
+  const[theme,setTheme]=useState(()=>{const t=LS.get("cs2-theme","ink");return THEMES.some(x=>x.key===t)?t:"ink"});
   const[autoSpeak,setAutoSpeak]=useState(()=>LS.get("cs2-speak",true));
   const[mode,setMode]=useState(()=>LS.get("cs2-mode","recognize"));
   const[lastDeckId,setLastDeckId]=useState(()=>LS.get("cs2-last",null));
@@ -797,8 +788,7 @@ function App(){
   useEffect(()=>{document.body.setAttribute("data-theme",theme);LS.set("cs2-theme",theme)},[theme]);
   useEffect(()=>{loadSources().then(setSources).catch(e=>{console.warn(e);setOffline(true);setSources(SAMPLE_SOURCES)})},[]);
   useEffect(()=>{if(toast){const t=setTimeout(()=>setToast(null),2200);return()=>clearTimeout(t)}},[toast]);
-
-  const flash=m=>setToast(m);
+  useEffect(()=>{window.scrollTo(0,0)},[tab,deckOpen,session,summary]);
 
   const start=(src,deck,pool,m)=>{
     streakBefore.current=streakOf(log);
@@ -806,8 +796,8 @@ function App(){
     setSummary(null);setSession({src,deck,pool:pool||deck.words,mode:m||mode,key:Date.now()});
   };
   const quickStart=async src=>{
-    try{flash("Loading "+src.label+"…");const d=await loadDeck(src);setToast(null);start(src,d,d.words,mode)}
-    catch(e){flash("Couldn't load deck: "+(e.message||e))}
+    try{setToast("Loading "+src.label+"…");const d=await loadDeck(src);setToast(null);start(src,d,d.words,mode)}
+    catch(e){setToast("Couldn't load deck: "+(e.message||e))}
   };
   const onRate=(w,g,isNew,relearn)=>{
     setSrs(s=>({...s,[w.id]:{...schedule(s[w.id],g),s:w.source_id}}));
@@ -817,7 +807,7 @@ function App(){
   };
 
   if(session&&!summary)return <Session key={session.key} {...session} srs={srs} autoSpeak={autoSpeak} onRate={onRate}
-    onExit={()=>{setSession(null)}} onFinish={r=>setSummary(r)}/>;
+    onExit={()=>setSession(null)} onFinish={r=>setSummary(r)}/>;
   if(summary)return <Summary res={summary} src={session.src} log={log} goal={goal} streakBefore={streakBefore.current}
     onAgain={()=>start(session.src,session.deck,session.pool,session.mode)} onDone={()=>{setSummary(null);setSession(null)}}/>;
 
@@ -827,12 +817,10 @@ function App(){
     onOpenDeck={s=>{setDeckOpen(s);setTab("decks")}} onQuickStart={quickStart}/>;
   else if(tab==="decks")body=deckOpen
     ?<DeckDetail src={deckOpen} srs={srs} mode={mode} setMode={setMode} onBack={()=>setDeckOpen(null)} onStart={start}/>
-    :<div className="page"><div className="up"><div className="h1">Decks</div><div className="sub">Pick a deck, then a chapter or the whole set</div></div>
-      {["Chinese Class","Self Study","Sample"].map(cat=>{const ss=sources.filter(s=>(s.category||"Self Study")===cat);return ss.length?<React.Fragment key={cat}>
-        <div className="lbl" style={{marginTop:6}}>{cat}</div>{ss.map((s,i)=><DeckRow key={s.id} s={s} srs={srs} delay={i*30} onClick={()=>setDeckOpen(s)}/>)}</React.Fragment>:null})}</div>;
+    :<DeckList sources={sources} srs={srs} onOpen={setDeckOpen}/>;
   else if(tab==="bridge")body=<Bridge/>;
   else body=<Progress srs={srs} log={log} goal={goal} setGoal={setGoal} theme={theme} setTheme={setTheme} autoSpeak={autoSpeak} setAutoSpeak={setAutoSpeak}
-    onReset={()=>{if(confirm("Reset all study progress on this device?")){setSrs({});setLog({});flash("Progress reset")}}}/>;
+    onReset={()=>{if(confirm("Reset all study progress on this device?")){setSrs({});setLog({});setToast("Progress reset")}}}/>;
 
   const totalDue=Object.values(srs).filter(c=>isDue(c)).length;
   return <>
@@ -840,7 +828,7 @@ function App(){
     {!(tab==="decks"&&deckOpen)&&<nav className="tabs">
       {[{k:"home",g:"家",l:"Home"},{k:"decks",g:"书",l:"Decks"},{k:"bridge",g:"橋",l:"Bridge"},{k:"progress",g:"进",l:"Progress"}].map(t=>
         <button key={t.k} className={"tab"+(tab===t.k?" on":"")} onClick={()=>{setTab(t.k);if(t.k==="decks")setDeckOpen(null)}}>
-          <span className="cjk">{t.g}</span>{t.l}{t.k==="home"&&totalDue>0&&<span className="dot">{totalDue>99?"99+":totalDue}</span>}</button>)}
+          <span className="cjk">{t.g}</span>{t.l}{t.k==="home"&&totalDue>0&&<span className="n">{totalDue>99?"99+":totalDue}</span>}</button>)}
     </nav>}
     <Toast msg={toast}/>
   </>;
