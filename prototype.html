@@ -22,12 +22,17 @@
   --text:#ecebe7;--muted:#a9a6a0;--dim:#7d7a75;
   --accent:#e0714f;--on-accent:#fff;
   --t1:#ec7a6a;--t2:#6cc88a;--t3:#74a4f2;--t4:#b98ce6;--t5:#8e8e8e;
+  /* one hue per deck — identifies the deck, tints its study sessions */
+  --d0:#e0714f;--d1:#4fb88a;--d2:#c47bd8;--d3:#6f8cf0;--d4:#e0a83a;
+  --again:#ec6a5a;--hard:#e0a43a;--good:#4fbf7f;--easy:#6a9cf2;
 }
 [data-theme="paper"]{
   --bg:#f6f2ea;--surface:#ebe5d9;--hair:#e0d8c9;
   --text:#25211b;--muted:#5f574b;--dim:#8a8173;
   --accent:#b4442b;--on-accent:#fff;
   --t1:#c8382a;--t2:#2f8a4c;--t3:#2c63c4;--t4:#7d40c0;--t5:#8a8a8a;
+  --d0:#b4442b;--d1:#2f8a5c;--d2:#8a44a8;--d3:#3a5cc4;--d4:#b07a10;
+  --again:#c8402e;--hard:#b07a10;--good:#2f8a4c;--easy:#2c63c4;
 }
 [data-theme="night"]{
   --bg:#0d1120;--surface:#171c2e;--hair:#22293f;
@@ -112,7 +117,7 @@ button{font-family:inherit;color:inherit;border:none;background:none;cursor:poin
 .week .today{color:var(--text);font-weight:600}
 .deck{display:flex;align-items:center;gap:16px;padding:16px 0;width:100%;text-align:left}
 .deck .g{font-family:'Noto Serif SC',serif;font-size:26px;font-weight:600;width:34px;text-align:center;color:var(--muted);flex-shrink:0}
-.deck:hover .g{color:var(--accent)}
+.deck:hover .g{filter:brightness(1.15)}
 .deck .nm{font-size:16px;font-weight:600}
 .deck .mt{font-size:13px;color:var(--dim);margin:2px 0 8px}
 .deck .due{font-size:13px;font-weight:600;color:var(--accent);white-space:nowrap}
@@ -138,7 +143,7 @@ button{font-family:inherit;color:inherit;border:none;background:none;cursor:poin
 .stage{padding:8px 24px 220px;animation:inR .25s ease-out both}
 .prompt{min-height:38vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:10px;padding:12px 0}
 .prompt .tag{font-size:12px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--dim)}
-.prompt .tag.new{color:var(--accent)}
+.prompt .tag.new{color:var(--deck)}
 .hz{font-family:'Noto Serif SC',serif;font-weight:600;color:var(--text);line-height:1.1;letter-spacing:.02em}
 .py{font-family:'Crimson Pro','Noto Sans',serif;font-style:italic;font-weight:500}
 .meaning{font-family:'Crimson Pro',serif;font-weight:600;font-size:30px;line-height:1.2}
@@ -162,7 +167,29 @@ button{font-family:inherit;color:inherit;border:none;background:none;cursor:poin
 details.so summary{list-style:none;cursor:pointer;font-size:13px;color:var(--dim);text-align:center;padding:14px 0 0}
 details.so summary::-webkit-details-marker{display:none}
 
-.dock{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:460px;padding:24px 16px calc(16px + env(safe-area-inset-bottom,0));background:linear-gradient(to bottom,transparent,var(--bg) 22px);z-index:60}
+/* colour that means something: deck tint before reveal, tone tint after */
+.wash{position:fixed;inset:0;pointer-events:none;z-index:0;transition:opacity .7s ease}
+.wash.deck{background:radial-gradient(120% 60% at 50% 0%,color-mix(in srgb,var(--deck) 20%,transparent),transparent 70%)}
+.wash.tone{background:radial-gradient(70% 50% at 15% 10%,color-mix(in srgb,var(--w1) 26%,transparent),transparent 75%),radial-gradient(70% 50% at 85% 10%,color-mix(in srgb,var(--w2) 26%,transparent),transparent 75%)}
+.sess{position:relative;min-height:100vh}
+.sess-top,.stage{position:relative;z-index:1}
+.sess-top{background:transparent}
+.sess-top .line>i{background:linear-gradient(90deg,var(--deck),color-mix(in srgb,var(--deck) 40%,var(--good)))}
+.hz span{transition:color .5s ease}
+.combo{font-size:13px;font-weight:700;color:var(--deck);white-space:nowrap;animation:pop .35s cubic-bezier(.2,1.6,.4,1) both}
+.combo .cjk{font-size:15px}
+@keyframes pop{0%{transform:scale(.5);opacity:0}100%{transform:scale(1);opacity:1}}
+.rate .btn{--c:var(--muted);background:color-mix(in srgb,var(--c) 16%,var(--surface));color:var(--c)}
+.rate .btn:nth-child(1){--c:var(--again)}.rate .btn:nth-child(2){--c:var(--hard)}
+.rate .btn:nth-child(3){--c:var(--good)}.rate .btn:nth-child(4){--c:var(--easy)}
+.rate .btn.primary{background:var(--good);color:#fff}
+.flash{position:fixed;inset:0;pointer-events:none;z-index:65;background:radial-gradient(90% 45% at 50% 100%,color-mix(in srgb,var(--f) 40%,transparent),transparent 70%);animation:flashA .55s ease-out both}
+@keyframes flashA{0%{opacity:0}25%{opacity:1}100%{opacity:0}}
+.stage.again{animation:shake .35s ease both}
+@keyframes shake{0%,100%{transform:none}25%{transform:translateX(-8px)}50%{transform:translateX(6px)}75%{transform:translateX(-3px)}}
+.confetti{position:fixed;inset:0;pointer-events:none;z-index:90}
+@media (prefers-reduced-motion:reduce){.wash,.hz span{transition:none}.flash,.combo,.seal,.stage,.stage.again{animation:none}}
+.dock{position:fixed;z-index:60;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:460px;padding:24px 16px calc(16px + env(safe-area-inset-bottom,0));background:linear-gradient(to bottom,transparent,var(--bg) 22px);z-index:60}
 .dock .kbd{font-size:12px;color:var(--dim);text-align:center;margin-top:10px}
 .rate{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
 .rate .btn{height:60px;flex-direction:column;gap:1px;padding:0 4px;font-size:15px}
@@ -197,7 +224,7 @@ details.so summary::-webkit-details-marker{display:none}
 .pair .cjk{font-size:72px;font-weight:600;line-height:1.05}
 .pair .arrow{color:var(--dim);font-size:20px;padding-bottom:34px}
 
-.undo{position:fixed;left:50%;bottom:150px;transform:translateX(-50%);display:flex;align-items:center;gap:14px;background:var(--text);color:var(--bg);padding:8px 8px 8px 16px;border-radius:12px;font-size:14px;z-index:70;animation:up .2s both;white-space:nowrap}
+.undo{position:fixed;left:50%;bottom:122px;transform:translateX(-50%);display:flex;align-items:center;gap:14px;background:var(--text);color:var(--bg);padding:8px 8px 8px 16px;border-radius:12px;font-size:14px;z-index:70;animation:up .2s both;white-space:nowrap}
 .undo button{color:var(--bg);font-weight:700;padding:6px 10px;border-radius:8px;background:color-mix(in srgb,var(--bg) 14%,transparent)}
 .toast{position:fixed;left:50%;bottom:100px;transform:translateX(-50%);background:var(--text);color:var(--bg);padding:10px 16px;border-radius:12px;font-size:14px;z-index:300;animation:up .25s both;white-space:nowrap}
 .notice{font-size:13px;color:var(--muted);padding:12px 0;border-bottom:1px solid var(--hair);margin-bottom:8px}
@@ -344,6 +371,20 @@ function speak(text){
 }
 
 /* ═════════════ SMALL COMPONENTS ═════════════ */
+const deckHue=src=>`var(--d${((src?.display_order||src?.id||1)-1+500)%5})`;
+const reducedMotion=()=>window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches;
+function confetti(n=70){
+  if(reducedMotion())return;
+  const cv=document.createElement("canvas");cv.className="confetti";document.body.appendChild(cv);
+  const dpr=window.devicePixelRatio||1,W=innerWidth,H=innerHeight;cv.width=W*dpr;cv.height=H*dpr;
+  const x=cv.getContext("2d");x.scale(dpr,dpr);
+  const cs=["--t1","--t2","--t3","--t4","--accent"].map(v=>getComputedStyle(document.body).getPropertyValue(v).trim());
+  const ps=[...Array(n)].map(()=>({x:W/2+(Math.random()-.5)*80,y:H*.35,vx:(Math.random()-.5)*9,vy:-Math.random()*9-4,r:Math.random()*6+4,a:Math.random()*6,va:(Math.random()-.5)*.3,c:cs[Math.floor(Math.random()*cs.length)]}));
+  const t0=performance.now();
+  (function f(t){const k=(t-t0)/1600;x.clearRect(0,0,W,H);
+    ps.forEach(p=>{p.vy+=.28;p.x+=p.vx;p.y+=p.vy;p.a+=p.va;x.save();x.globalAlpha=Math.max(0,1-k);x.translate(p.x,p.y);x.rotate(p.a);x.fillStyle=p.c;x.fillRect(-p.r/2,-p.r/4,p.r,p.r/2);x.restore()});
+    if(k<1)requestAnimationFrame(f);else cv.remove()})(t0);
+}
 const Svg=({d,size=20,fill})=><svg width={size} height={size} viewBox="0 0 24 24" fill={fill||"none"} stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">{d}</svg>;
 const I={
   speaker:s=><Svg size={s} d={<><path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M19 5a10 10 0 0 1 0 14"/></>}/>,
@@ -436,8 +477,8 @@ function Home({sources,srs,log,goal,lastDeckId,onOpenDeck,onAllDecks,onQuickStar
 function DeckRow({s,srs,onClick}){
   const st=deckStats(srs,s.id,s.word_count);
   const pct=s.word_count?st.seen/s.word_count*100:0;
-  return <button className="deck" onClick={onClick}>
-    <div className="g">{s.icon||"字"}</div>
+  return <button className="deck" onClick={onClick} style={{"--accent":deckHue(s)}}>
+    <div className="g" style={{color:deckHue(s)}}>{s.icon||"字"}</div>
     <div style={{flex:1,minWidth:0}}>
       <div className="nm">{s.label}</div>
       <div className="mt">{st.seen?`${st.known} known · ${st.seen-st.known} learning · `:""}{st.fresh} new</div>
@@ -470,7 +511,8 @@ function DeckDetail({src,srs,mode,setMode,onBack,onStart}){
   const m=MODES.find(x=>x.key===mode);
 
   return <div className="screen">
-    <Head onBack={onBack} title={src.label} sub={`${src.category} · ${data?data.words.length:src.word_count} words`}/>
+    <Head onBack={onBack} title={src.label} sub={`${src.category} · ${data?data.words.length:src.word_count} words`}
+      right={<div className="cjk" style={{fontSize:34,fontWeight:600,color:deckHue(src)}}>{src.icon}</div>}/>
 
     <Sec delay={40} style={{marginTop:24}}>
       <div className="nums">
@@ -558,6 +600,9 @@ function Session({src,deck,pool,mode,srs,autoSpeak,onRate,onUndo,onExit,onFinish
   const[undo,setUndo]=useState(null);       // snapshot of the last rating, for a few seconds
   const[strokesOpen,setStrokesOpen]=useState(false);
   const restoring=useRef(false);
+  const[combo,setCombo]=useState(0);
+  const[flash,setFlash]=useState(null);
+  const[shake,setShake]=useState(false);
   const w=queue[i];
   const card=w?srs[w.id]:null;
 
@@ -578,20 +623,24 @@ function Session({src,deck,pool,mode,srs,autoSpeak,onRate,onUndo,onExit,onFinish
   },[queue]);
 
   const rate=g=>{
-    if(!revealed||!w)return;
+    if(!revealed||!w||shake)return;
     const counted=!results.has(w.id);
-    const snap={i,queue,g,w,prev:srs[w.id],counted,isNew:counted&&wasNew.has(w.id)};
+    const snap={i,queue,g,w,prev:srs[w.id],counted,isNew:counted&&wasNew.has(w.id),combo};
+    setFlash({c:["var(--again)","var(--hard)","var(--good)","var(--easy)"][g],k:Date.now()});
+    const nc=g>=2?combo+1:g===0?0:combo;setCombo(nc);
+    if(nc>combo&&nc>=5&&nc%5===0)confetti(40);
     if(counted){results.set(w.id,g);onRate(w,g,snap.isNew)}
     else onRate(w,g,false,true);           // relearning step: update schedule, don't count twice
     let q=queue;
     if(g===0){q=[...queue];q.splice(Math.min(i+4,q.length),0,w);setQueue(q)}   // see it again soon
-    if(i+1>=q.length)finish();else{setI(i+1);setUndo(snap)}
+    const advance=()=>{if(i+1>=q.length)finish();else{setI(i+1);setUndo(snap)}};
+    if(g===0&&!reducedMotion()){setShake(true);setTimeout(()=>{setShake(false);advance()},300)}else advance();
   };
   const doUndo=()=>{
     if(!undo)return;const u=undo;setUndo(null);
     if(u.counted)results.delete(u.w.id);
     onUndo(u.w,u.prev,u.counted,u.g,u.isNew);
-    restoring.current=true;setQueue(u.queue);setI(u.i);
+    restoring.current=true;setCombo(u.combo);setQueue(u.queue);setI(u.i);
   };
   // leaving mid-session still shows what was done
   const exit=()=>{if(results.size)finish();else onExit()};
@@ -622,16 +671,24 @@ function Session({src,deck,pool,mode,srs,autoSpeak,onRate,onUndo,onExit,onFinish
   const hints=[w.hint&&w.hint,mode!=="recognize"&&<Pinyin text={w.pinyin} size={20}/>,mode==="recall"&&chars.length>1&&<>Starts with <span className="cjk" style={{fontSize:20}}>{chars[0]}</span></>].filter(Boolean);
   const speakBtn=<button className="ibtn" onClick={()=>speak(w.hanzi)} aria-label="Play pronunciation">{I.speaker(22)}</button>;
   const tag=<div className={"tag"+(isNew?" new":"")}>{isNew?"New word":MODES.find(m=>m.key===mode).label}</div>;
-  const Hz=()=><div className="hz" style={{fontSize:hzSize}}>{w.hanzi}</div>;
+  const tones=syls.length===chars.length?syls.map(toneOf):null;
+  const Hz=()=>{let ci=0;return <div className="hz" style={{fontSize:hzSize}}>{[...w.hanzi].map((ch,j)=>{
+    const t=/\p{Script=Han}/u.test(ch)&&tones?tones[ci++]:null;
+    return <span key={j} style={revealed&&t?{color:`var(--t${t})`}:null}>{ch}</span>})}</div>};
+  const wt=(tones||syls.map(toneOf));
+  const w1=`var(--t${wt[0]||5})`,w2=`var(--t${wt[wt.length-1]||5})`;
 
-  return <div>
+  return <div className="sess" style={{"--deck":deckHue(src),"--w1":w1,"--w2":w2}}>
+    <div className="wash deck" style={{opacity:revealed?0:1}}/>
+    <div className="wash tone" style={{opacity:revealed?1:0}}/>
     <div className="sess-top">
       <button className="ibtn" onClick={exit} aria-label="End session">{I.x(20)}</button>
       <div className="line"><i style={{width:(i/queue.length*100)+"%"}}/></div>
+      {combo>=3&&<div className="combo" key={combo}><span className="cjk">连</span> ×{combo}</div>}
       <div className="c">{i+1} / {queue.length}</div>
     </div>
 
-    <div className="stage" key={i}>
+    <div className={"stage"+(shake?" again":"")} key={i}>
       {init.extra&&i===0&&<div className="notice" style={{textAlign:"center"}}>All caught up — extra practice on your weakest words.</div>}
 
       <div className="prompt" style={mode==="write"?{minHeight:"auto",padding:"28px 0 20px"}:revealed?{minHeight:"auto",paddingTop:20}:null}>
@@ -680,6 +737,7 @@ function Session({src,deck,pool,mode,srs,autoSpeak,onRate,onUndo,onExit,onFinish
         <div className="kbd">How well did you know it? · keys 1–4 · Enter = Good</div>
       </>}
     </div>
+    {flash&&<div className="flash" key={flash.k} style={{"--f":flash.c}} onAnimationEnd={()=>setFlash(null)}/>}
     {undo&&<div className="undo">Rated {["Again","Hard","Good","Easy"][undo.g]}<button onClick={doUndo}>Undo</button></div>}
   </div>;
 }
@@ -691,8 +749,9 @@ function Summary({res,src,log,goal,streakBefore,onAgain,onDone}){
   const acc=res.reviewed?Math.round(res.correct/res.reviewed*100):0;
   const glyph=acc>=90?"优":acc>=70?"好":"进";
   const msg=acc>=90?"Excellent":acc>=70?"Nice work":"Progress made";
+  useEffect(()=>{if(res.reviewed&&(acc>=70||today.reviews>=goal))setTimeout(()=>confetti(90),250)},[]);
   return <div className="screen" style={{textAlign:"center"}}>
-    <div className="seal">{glyph}</div>
+    <div className="seal" style={{background:deckHue(src)}}>{glyph}</div>
     <div className="serif" style={{fontSize:32,fontWeight:700,lineHeight:1.1}}>{msg}</div>
     <div className="dim" style={{marginTop:4}}>{src.label} · {Math.floor(res.secs/60)}m {res.secs%60}s</div>
     {streak>streakBefore&&<div className="acc up" style={{marginTop:14,fontWeight:600}}><span className="cjk">火</span> Streak extended to {streak} day{streak>1?"s":""}</div>}
