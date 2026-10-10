@@ -197,6 +197,8 @@ details.so summary::-webkit-details-marker{display:none}
 .pair .cjk{font-size:72px;font-weight:600;line-height:1.05}
 .pair .arrow{color:var(--dim);font-size:20px;padding-bottom:34px}
 
+.undo{position:fixed;left:50%;bottom:150px;transform:translateX(-50%);display:flex;align-items:center;gap:14px;background:var(--text);color:var(--bg);padding:8px 8px 8px 16px;border-radius:12px;font-size:14px;z-index:70;animation:up .2s both;white-space:nowrap}
+.undo button{color:var(--bg);font-weight:700;padding:6px 10px;border-radius:8px;background:color-mix(in srgb,var(--bg) 14%,transparent)}
 .toast{position:fixed;left:50%;bottom:100px;transform:translateX(-50%);background:var(--text);color:var(--bg);padding:10px 16px;border-radius:12px;font-size:14px;z-index:300;animation:up .25s both;white-space:nowrap}
 .notice{font-size:13px;color:var(--muted);padding:12px 0;border-bottom:1px solid var(--hair);margin-bottom:8px}
 .empty{text-align:center;padding:60px 16px;color:var(--dim)}
@@ -328,6 +330,13 @@ async function loadDeck(src){
 let zhVoice=null;
 function pickVoice(){if(!("speechSynthesis" in window))return;const vs=speechSynthesis.getVoices();zhVoice=vs.find(v=>/zh[-_]CN/i.test(v.lang))||vs.find(v=>/^zh|cmn/i.test(v.lang))||null}
 if("speechSynthesis" in window){pickVoice();speechSynthesis.onvoiceschanged=pickVoice}
+let audioUnlocked=false;
+function unlockAudio(){
+  if(audioUnlocked||!("speechSynthesis" in window))return;
+  audioUnlocked=true;
+  try{const u=new SpeechSynthesisUtterance(" ");u.volume=0;speechSynthesis.speak(u)}catch(e){}
+}
+["pointerdown","keydown","touchend"].forEach(ev=>window.addEventListener(ev,unlockAudio,{capture:true}));
 function speak(text){
   if(!("speechSynthesis" in window)||!text)return false;
   const u=new SpeechSynthesisUtterance(text);u.lang="zh-CN";if(zhVoice)u.voice=zhVoice;u.rate=.8;
@@ -383,13 +392,16 @@ function deckStats(srs,srcId,total,now=Date.now()){
 
 
 /* ═════════════ HOME ═════════════ */
-function Home({sources,srs,log,goal,lastDeckId,onOpenDeck,onQuickStart,offline}){
+function Home({sources,srs,log,goal,lastDeckId,onOpenDeck,onAllDecks,onQuickStart,offline}){
   const today=log[dayKey()]||{reviews:0};
   const streak=streakOf(log);
   const last=sources.find(s=>s.id===lastDeckId)||sources[0];
   const st=last?deckStats(srs,last.id,last.word_count):null;
   const totalDue=sources.reduce((a,s)=>a+deckStats(srs,s.id,s.word_count).due,0);
   const done=today.reviews>=goal;
+  // last-used deck first, then decks with the most due cards, then decks already started
+  const recent=[...sources].sort((a,b)=>{const sa=deckStats(srs,a.id,a.word_count),sb=deckStats(srs,b.id,b.word_count);
+    return (b.id===last?.id)-(a.id===last?.id)||sb.due-sa.due||sb.seen-sa.seen}).slice(0,3);
   const days=[...Array(7)].map((_,i)=>{const t=Date.now()-(6-i)*DAY;return{d:"SMTWTFS"[new Date(t).getDay()],ok:(log[dayKey(t)]?.reviews||0)>0,today:i===6}});
   const greet=(()=>{const h=new Date().getHours();return h<12?"早上好":h<18?"下午好":"晚上好"})();
   const mins=Math.max(1,Math.ceil(Math.min(SESSION_SIZE,(st?.due||0)+Math.min(st?.fresh||0,NEW_PER_SESSION)||SESSION_SIZE)*12/60));
@@ -415,8 +427,9 @@ function Home({sources,srs,log,goal,lastDeckId,onOpenDeck,onQuickStart,offline})
       <div className="week">{days.map((d,i)=><div key={i} className={d.today?"today":""}>{d.d}<i className={d.ok?"ok":""}/></div>)}</div>
     </Sec>
 
-    <Sec title="Decks" aside={totalDue?`${totalDue} due`:null} delay={120}>
-      <div className="list">{sources.map(s=><DeckRow key={s.id} s={s} srs={srs} onClick={()=>onOpenDeck(s)}/>)}</div>
+    <Sec title="Continue" aside={totalDue?`${totalDue} due in all decks`:null} delay={120}>
+      <div className="list">{recent.map(s=><DeckRow key={s.id} s={s} srs={srs} onClick={()=>onOpenDeck(s)}/>)}</div>
+      {sources.length>recent.length&&<button className="btn sm text" style={{marginTop:6,paddingLeft:0}} onClick={onAllDecks}>All {sources.length} decks {I.next(16)}</button>}
     </Sec>
   </div>;
 }
@@ -533,7 +546,7 @@ function StrokeQuiz({chars,onComplete,revealed}){
 }
 
 /* ═════════════ STUDY SESSION ═════════════ */
-function Session({src,deck,pool,mode,srs,autoSpeak,onRate,onExit,onFinish}){
+function Session({src,deck,pool,mode,srs,autoSpeak,onRate,onUndo,onExit,onFinish}){
   const init=useMemo(()=>buildQueue(pool,srs),[]);
   const[queue,setQueue]=useState(init.queue);
   const[i,setI]=useState(0);
@@ -542,35 +555,56 @@ function Session({src,deck,pool,mode,srs,autoSpeak,onRate,onExit,onFinish}){
   const[results]=useState(()=>new Map());   // wordId → first grade this session
   const[wasNew]=useState(()=>new Set(init.queue.filter(w=>!srs[w.id]).map(w=>w.id)));
   const[t0]=useState(Date.now());
+  const[undo,setUndo]=useState(null);       // snapshot of the last rating, for a few seconds
+  const[strokesOpen,setStrokesOpen]=useState(false);
+  const restoring=useRef(false);
   const w=queue[i];
   const card=w?srs[w.id]:null;
 
-  useEffect(()=>{setRevealed(false);setHint(0);if(w&&mode==="listen")setTimeout(()=>speak(w.hanzi),250)},[i,queue.length===0]);
+  useEffect(()=>{
+    window.scrollTo(0,0);setHint(0);setStrokesOpen(false);
+    if(restoring.current){restoring.current=false;setRevealed(true);return}
+    setRevealed(false);
+    if(w&&mode==="listen"&&audioUnlocked)setTimeout(()=>speak(w.hanzi),250);
+  },[i,queue.length===0]);
+  useEffect(()=>{if(undo){const t=setTimeout(()=>setUndo(null),4000);return()=>clearTimeout(t)}},[undo]);
   useEffect(()=>{if(revealed&&autoSpeak&&mode!=="listen")speak(w.hanzi)},[revealed]);
 
   const finish=useCallback(()=>{
     const firsts=[...results.values()];
     const uniq=(pred)=>queue.filter((x,j,a)=>pred(x)&&a.findIndex(y=>y.id===x.id)===j);
     onFinish({reviewed:firsts.length,correct:firsts.filter(g=>g>0).length,secs:Math.round((Date.now()-t0)/1000),
-      newLearned:uniq(x=>wasNew.has(x.id)),missed:uniq(x=>results.get(x.id)===0),extra:init.extra});
+      newLearned:uniq(x=>wasNew.has(x.id)&&results.has(x.id)),missed:uniq(x=>results.get(x.id)===0),extra:init.extra});
   },[queue]);
 
   const rate=g=>{
     if(!revealed||!w)return;
-    if(!results.has(w.id)){results.set(w.id,g);onRate(w,g,wasNew.has(w.id))}
+    const counted=!results.has(w.id);
+    const snap={i,queue,g,w,prev:srs[w.id],counted,isNew:counted&&wasNew.has(w.id)};
+    if(counted){results.set(w.id,g);onRate(w,g,snap.isNew)}
     else onRate(w,g,false,true);           // relearning step: update schedule, don't count twice
     let q=queue;
     if(g===0){q=[...queue];q.splice(Math.min(i+4,q.length),0,w);setQueue(q)}   // see it again soon
-    if(i+1>=q.length)finish();else setI(i+1);
+    if(i+1>=q.length)finish();else{setI(i+1);setUndo(snap)}
   };
+  const doUndo=()=>{
+    if(!undo)return;const u=undo;setUndo(null);
+    if(u.counted)results.delete(u.w.id);
+    onUndo(u.w,u.prev,u.counted,u.g,u.isNew);
+    restoring.current=true;setQueue(u.queue);setI(u.i);
+  };
+  // leaving mid-session still shows what was done
+  const exit=()=>{if(results.size)finish();else onExit()};
 
   useEffect(()=>{
     const k=e=>{
       if((e.key===" "||e.key==="Enter")&&!revealed){e.preventDefault();setRevealed(true)}
+      else if(e.key==="Enter"&&revealed){e.preventDefault();rate(2)}
       else if(revealed&&["1","2","3","4"].includes(e.key))rate(+e.key-1);
+      else if(e.key==="u"||e.key==="U"||(e.key==="z"&&(e.ctrlKey||e.metaKey))){e.preventDefault();doUndo()}
       else if(e.key==="s"||e.key==="S")speak(w?.hanzi);
       else if(e.key==="h"||e.key==="H")setHint(h=>h+1);
-      else if(e.key==="Escape")onExit();
+      else if(e.key==="Escape")exit();
     };
     window.addEventListener("keydown",k);return()=>window.removeEventListener("keydown",k);
   });
@@ -578,6 +612,8 @@ function Session({src,deck,pool,mode,srs,autoSpeak,onRate,onExit,onFinish}){
   if(!w)return <div className="screen"><div className="empty"><span className="cjk">空</span>No words to study here yet.<br/><br/><button className="btn" onClick={onExit}>Back</button></div></div>;
 
   const chars=hanChars(w.hanzi);
+  const syls=(w.pinyin||"").trim().split(/\s+/);
+  const charPy=(j,h)=>syls.length===chars.length?syls[j]:h.pinyin;
   const hzSize=chars.length<=1?120:chars.length===2?96:chars.length===3?72:Math.max(40,240/chars.length);
   const isNew=!card&&wasNew.has(w.id);
   const sandhi=(deck.sandhi[w.id]||[]).find(t=>t.modified_pinyin!==t.original_pinyin)||(deck.sandhi[w.id]||[])[0];
@@ -590,7 +626,7 @@ function Session({src,deck,pool,mode,srs,autoSpeak,onRate,onExit,onFinish}){
 
   return <div>
     <div className="sess-top">
-      <button className="ibtn" onClick={onExit} aria-label="End session">{I.x(20)}</button>
+      <button className="ibtn" onClick={exit} aria-label="End session">{I.x(20)}</button>
       <div className="line"><i style={{width:(i/queue.length*100)+"%"}}/></div>
       <div className="c">{i+1} / {queue.length}</div>
     </div>
@@ -603,7 +639,7 @@ function Session({src,deck,pool,mode,srs,autoSpeak,onRate,onExit,onFinish}){
         {mode==="recognize"&&<><Hz/>{revealed&&<Pinyin text={w.pinyin} size={28}/>}{speakBtn}</>}
         {mode==="recall"&&<><div className="meaning">{w.meaning}</div>{revealed&&<><Hz/><Pinyin text={w.pinyin} size={26}/></>}{revealed&&speakBtn}</>}
         {mode==="listen"&&<>{!revealed&&<button className="btn primary" style={{width:84,height:84,borderRadius:"50%",margin:"12px 0"}} onClick={()=>speak(w.hanzi)} aria-label="Play">{I.speaker(34)}</button>}
-          {!revealed&&<div className="dim small">Tap to replay · what did you hear?</div>}
+          {!revealed&&<div className="dim small">{audioUnlocked?"Tap to replay · what did you hear?":"Tap to play · what did you hear?"}</div>}
           {revealed&&<><Hz/><Pinyin text={w.pinyin} size={26}/>{speakBtn}</>}</>}
         {mode==="write"&&<><div className="meaning">{w.meaning}</div><Pinyin text={w.pinyin} size={22}/></>}
       </div>
@@ -620,7 +656,7 @@ function Session({src,deck,pool,mode,srs,autoSpeak,onRate,onExit,onFinish}){
         {w.marathi&&<div className="mr">{w.marathi}</div>}
         <div className="facts list">
           {chars.some(c=>deck.chars[c])&&<div className="fact"><span>{chars.length>1?"Chars":"Char"}</span><div className="chars">{chars.map((c,j)=>{const h=deck.chars[c];return h?<div key={j}>
-            <span className="cjk">{c}</span><div><Pinyin text={h.pinyin} size={17}/> <span className="muted">{(h.meaning||"").split(/[,;]/).slice(0,2).join(",")}</span>
+            <span className="cjk">{c}</span><div><Pinyin text={charPy(j,h)} size={17}/> <span className="muted">{(h.meaning||"").split(/[,;]/).slice(0,2).join(",")}</span>
             <div className="sub">{h.radical&&<>radical <span className="cjk">{h.radical}</span> · </>}{h.stroke_count} strokes</div></div></div>:null})}</div></div>}
           {sandhi&&<div className="fact"><span>Tone</span><div>
             {sandhi.modified_pinyin!==sandhi.original_pinyin?<>Spoken as <Pinyin text={sandhi.modified_pinyin} size={18}/></>:<b style={{fontWeight:600}}>{rule?rule.rule_name:"Tone rule"}</b>}
@@ -630,7 +666,7 @@ function Session({src,deck,pool,mode,srs,autoSpeak,onRate,onExit,onFinish}){
             {b.notes&&<div className="sub">{b.notes}</div>}</div>)}</div></div>}
           {w.hint&&<div className="fact"><span>Hint</span><div>{w.hint}</div></div>}
         </div>
-        {mode!=="write"&&chars.length>0&&window.HanziWriter&&<details className="so"><summary>Show stroke order</summary><div style={{marginTop:12}}><StrokeQuiz chars={chars} revealed/></div></details>}
+        {mode!=="write"&&chars.length>0&&window.HanziWriter&&<details className="so" open={strokesOpen} onToggle={e=>setStrokesOpen(e.currentTarget.open)}><summary>{strokesOpen?"Hide":"Show"} stroke order</summary>{strokesOpen&&<div style={{marginTop:12}}><StrokeQuiz chars={chars} revealed/></div>}</details>}
       </div>}
     </div>
 
@@ -641,9 +677,10 @@ function Session({src,deck,pool,mode,srs,autoSpeak,onRate,onExit,onFinish}){
       </>:<>
         <div className="rate">{["Again","Hard","Good","Easy"].map((n,g)=>
           <button key={g} className={"btn"+(g===2?" primary":"")} onClick={()=>rate(g)}>{n}<small>{fmtIv(card,g)}</small></button>)}</div>
-        <div className="kbd">How well did you know it? · keys 1–4</div>
+        <div className="kbd">How well did you know it? · keys 1–4 · Enter = Good</div>
       </>}
     </div>
+    {undo&&<div className="undo">Rated {["Again","Hard","Good","Easy"][undo.g]}<button onClick={doUndo}>Undo</button></div>}
   </div>;
 }
 
@@ -806,7 +843,14 @@ function App(){
       return{...l,[k]:{...d,reviews:d.reviews+1,correct:d.correct+(g>0?1:0),newWords:d.newWords+(isNew?1:0)}}});
   };
 
-  if(session&&!summary)return <Session key={session.key} {...session} srs={srs} autoSpeak={autoSpeak} onRate={onRate}
+  const onUndo=(w,prev,counted,g,isNew)=>{
+    setSrs(s=>{const n={...s};if(prev)n[w.id]=prev;else delete n[w.id];return n});
+    if(!counted)return;
+    setLog(l=>{const k=dayKey(),d=l[k];if(!d)return l;
+      return{...l,[k]:{...d,reviews:Math.max(0,d.reviews-1),correct:Math.max(0,d.correct-(g>0?1:0)),newWords:Math.max(0,d.newWords-(isNew?1:0))}}});
+  };
+
+  if(session&&!summary)return <Session key={session.key} {...session} srs={srs} autoSpeak={autoSpeak} onRate={onRate} onUndo={onUndo}
     onExit={()=>setSession(null)} onFinish={r=>setSummary(r)}/>;
   if(summary)return <Summary res={summary} src={session.src} log={log} goal={goal} streakBefore={streakBefore.current}
     onAgain={()=>start(session.src,session.deck,session.pool,session.mode)} onDone={()=>{setSummary(null);setSession(null)}}/>;
@@ -814,7 +858,7 @@ function App(){
   let body;
   if(!sources)body=<div className="empty" style={{marginTop:80}}><span className="cjk">学</span>Loading your decks…</div>;
   else if(tab==="home")body=<Home sources={sources} srs={srs} log={log} goal={goal} lastDeckId={lastDeckId} offline={offline}
-    onOpenDeck={s=>{setDeckOpen(s);setTab("decks")}} onQuickStart={quickStart}/>;
+    onOpenDeck={s=>{setDeckOpen(s);setTab("decks")}} onAllDecks={()=>{setDeckOpen(null);setTab("decks")}} onQuickStart={quickStart}/>;
   else if(tab==="decks")body=deckOpen
     ?<DeckDetail src={deckOpen} srs={srs} mode={mode} setMode={setMode} onBack={()=>setDeckOpen(null)} onStart={start}/>
     :<DeckList sources={sources} srs={srs} onOpen={setDeckOpen}/>;
