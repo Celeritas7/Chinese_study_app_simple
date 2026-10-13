@@ -1,0 +1,1015 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+<title>Chinese Study</title>
+<link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;0,700;1,400;1,500&family=Noto+Serif+SC:wght@400;500;600;700&family=Noto+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<!--
+  PROTOTYPE — redesigned study flow. index.html is untouched.
+  Design rules:
+   1. One accent colour per theme. Tone colours appear only on pinyin.
+   2. Spacing instead of boxes; hairline dividers only where lists need them.
+   3. The study card sits on the page background — no coloured card.
+   4. One button family (.btn primary / quiet, same shape) and one icon set
+      (line icons for actions, CJK glyphs for navigation). No emoji.
+   5. Every tab uses the same layout: Header → Sections (label + content).
+-->
+<style>
+/* ── themes: bg, surface, hairline, ink, muted, dim, ONE accent, tone colours ── */
+:root,[data-theme="ink"]{
+  --bg:#121417;--surface:#1c1f24;--hair:#262a31;
+  --text:#ecebe7;--muted:#a9a6a0;--dim:#7d7a75;
+  --accent:#e0714f;--on-accent:#fff;
+  --t1:#ec7a6a;--t2:#6cc88a;--t3:#74a4f2;--t4:#b98ce6;--t5:#8e8e8e;
+  /* one hue per deck — identifies the deck, tints its study sessions */
+  --d0:#e0714f;--d1:#4fb88a;--d2:#c47bd8;--d3:#6f8cf0;--d4:#e0a83a;--d5:#3fb8c4;--d6:#e66a8f;
+  --again:#ec6a5a;--hard:#e0a43a;--good:#4fbf7f;--easy:#6a9cf2;
+}
+[data-theme="paper"]{
+  --bg:#f6f2ea;--surface:#ebe5d9;--hair:#e0d8c9;
+  --text:#25211b;--muted:#5f574b;--dim:#8a8173;
+  --accent:#b4442b;--on-accent:#fff;
+  --t1:#c8382a;--t2:#2f8a4c;--t3:#2c63c4;--t4:#7d40c0;--t5:#8a8a8a;
+  --d0:#b4442b;--d1:#2f8a5c;--d2:#8a44a8;--d3:#3a5cc4;--d4:#b07a10;--d5:#1f7f8a;--d6:#b83a62;
+  --again:#c8402e;--hard:#b07a10;--good:#2f8a4c;--easy:#2c63c4;
+}
+[data-theme="night"]{
+  --bg:#0d1120;--surface:#171c2e;--hair:#22293f;
+  --text:#ebe4d6;--muted:#a9a290;--dim:#7a7464;
+  --accent:#d9ad4f;--on-accent:#1a1406;
+  --t1:#ef7d6f;--t2:#6cc88a;--t3:#7aa8f5;--t4:#bf93ea;--t5:#8e8e8e;
+}
+[data-theme="jade"]{
+  --bg:#0c1310;--surface:#15201a;--hair:#1f2d25;
+  --text:#e3ece5;--muted:#9db3a4;--dim:#6f8576;
+  --accent:#5cc28e;--on-accent:#06140c;
+  --t1:#ef7d6f;--t2:#8fd86c;--t3:#7aa8f5;--t4:#bf93ea;--t5:#8e8e8e;
+}
+[data-theme="sunset"]{
+  --bg:#1a1310;--surface:#251c17;--hair:#33271f;
+  --text:#f2e6da;--muted:#bba892;--dim:#8a7765;
+  --accent:#f08c5a;--on-accent:#1f0f05;
+  --t1:#f27f6c;--t2:#7fcf7f;--t3:#7aa8f5;--t4:#c495e6;--t5:#9a9088;
+}
+
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{background:var(--bg)}
+body{font-family:'Noto Sans',sans-serif;color:var(--text);-webkit-font-smoothing:antialiased;min-height:100vh;font-size:15px;line-height:1.45;transition:background .3s,color .3s}
+button{font-family:inherit;color:inherit;border:none;background:none;cursor:pointer}
+.cjk{font-family:'Noto Serif SC',serif}
+.serif{font-family:'Crimson Pro',serif}
+#app{max-width:460px;margin:0 auto;min-height:100vh;position:relative}
+
+@keyframes up{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes inR{from{opacity:0;transform:translateX(24px)}to{opacity:1;transform:none}}
+@keyframes stamp{0%{transform:scale(1.6) rotate(-8deg);opacity:0}70%{transform:scale(.96) rotate(-3deg);opacity:1}100%{transform:scale(1) rotate(-3deg)}}
+.up{animation:up .35s ease-out both}
+
+/* ── shared page layout ── */
+.screen{padding:28px 22px 120px}
+.head{display:flex;align-items:center;gap:14px;margin-bottom:8px}
+.head .g{font-family:'Noto Serif SC',serif;font-size:30px;font-weight:600;color:var(--accent);line-height:1;width:34px;text-align:center;flex-shrink:0}
+.head .t{font-family:'Crimson Pro',serif;font-size:30px;font-weight:700;line-height:1.05}
+.head .s{font-size:14px;color:var(--dim);margin-top:2px}
+.head .r{margin-left:auto;text-align:right}
+.sec{margin-top:34px}
+.sec-t{display:flex;justify-content:space-between;align-items:baseline;font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin-bottom:12px}
+.sec-t .aside{letter-spacing:0;text-transform:none;font-weight:500}
+.list>*+*{border-top:1px solid var(--hair)}
+.muted{color:var(--muted)}.dim{color:var(--dim)}.acc{color:var(--accent)}
+.small{font-size:13px}
+
+/* ── one button family ── */
+.btn{height:52px;padding:0 20px;border-radius:14px;font-size:16px;font-weight:600;display:inline-flex;align-items:center;justify-content:center;gap:8px;transition:transform .1s,filter .2s,background .2s,color .2s;background:var(--surface);color:var(--text)}
+.btn:active{transform:scale(.97)}
+.btn:hover{filter:brightness(1.07)}
+.btn.primary{background:var(--accent);color:var(--on-accent)}
+.btn.sm{height:40px;padding:0 14px;font-size:14px;border-radius:12px}
+.btn.on{background:color-mix(in srgb,var(--accent) 16%,var(--surface));color:var(--accent)}
+.btn.full{width:100%}
+.btn.text{background:transparent;color:var(--muted)}
+.btn.text:hover{color:var(--text)}
+.ibtn{width:42px;height:42px;border-radius:12px;display:inline-flex;align-items:center;justify-content:center;color:var(--muted);flex-shrink:0;transition:color .2s,background .2s}
+.ibtn:hover{color:var(--text);background:var(--surface)}
+.btns{display:flex;gap:8px;flex-wrap:wrap}
+.btns>.btn{flex:1}
+
+/* ── tab bar ── */
+.tabs{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:460px;display:grid;grid-template-columns:repeat(4,1fr);background:var(--bg);border-top:1px solid var(--hair);padding-bottom:env(safe-area-inset-bottom,0);z-index:50}
+.tab{padding:10px 4px 12px;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;font-weight:500;color:var(--dim);position:relative}
+.tab .cjk{font-size:20px;font-weight:600;line-height:1}
+.tab.on{color:var(--accent)}
+.tab .n{position:absolute;top:6px;left:calc(50% + 10px);font-size:10px;font-weight:700;color:var(--accent)}
+
+/* ── bars, ring ── */
+.line{height:3px;border-radius:2px;background:var(--hair);overflow:hidden}
+.line>i{display:block;height:100%;background:var(--accent);border-radius:2px;transition:width .4s}
+.ring svg{transform:rotate(-90deg);display:block}
+
+/* ── home ── */
+.goal{display:flex;align-items:center;gap:20px}
+.goal .num{font-family:'Crimson Pro',serif;font-size:40px;font-weight:700;line-height:1}
+.week{display:flex;justify-content:space-between}
+.week div{display:flex;flex-direction:column;align-items:center;gap:8px;font-size:12px;color:var(--dim);width:32px}
+.week i{width:10px;height:10px;border-radius:50%;background:var(--hair)}
+.week i.ok{background:var(--accent)}
+.week .today{color:var(--text);font-weight:600}
+.deck{display:flex;align-items:center;gap:16px;padding:16px 0;width:100%;text-align:left}
+.deck .g{font-family:'Noto Serif SC',serif;font-size:26px;font-weight:600;width:34px;text-align:center;color:var(--muted);flex-shrink:0}
+.deck:hover .g{filter:brightness(1.15)}
+.deck .nm{font-size:16px;font-weight:600}
+.deck .mt{font-size:13px;color:var(--dim);margin:2px 0 8px}
+.deck .due{font-size:13px;font-weight:600;color:var(--accent);white-space:nowrap}
+.deck .due.z{color:var(--dim);font-weight:500}
+
+/* ── numbers row (replaces stat boxes) ── */
+.nums{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.nums.two{grid-template-columns:repeat(2,1fr);row-gap:22px}
+.nums .v{font-family:'Crimson Pro',serif;font-size:34px;font-weight:700;line-height:1}
+.nums .l{font-size:13px;color:var(--dim);margin-top:4px}
+
+/* ── chapters ── */
+.chs{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:8px}
+.chs .btn{height:auto;padding:12px 8px 10px;flex-direction:column;gap:3px;align-items:stretch;text-align:center}
+.chs .btn b{font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chs .btn small{font-size:12px;color:var(--dim);font-weight:500}
+.chs .btn.on small{color:inherit;opacity:.8}
+
+/* ── study session ── */
+.sess-top{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--bg)}
+.sess-top .line{flex:1}
+.sess-top .c{font-size:13px;color:var(--dim);min-width:46px;text-align:right;font-variant-numeric:tabular-nums}
+.stage{padding:8px 24px 220px;animation:inR .25s ease-out both}
+.prompt{min-height:38vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:10px;padding:12px 0}
+.prompt .tag{font-size:12px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--dim)}
+.prompt .tag.new{color:var(--deck)}
+.hz{font-family:'Noto Serif SC',serif;font-weight:600;color:var(--text);line-height:1.1;letter-spacing:.02em}
+.py{font-family:'Crimson Pro','Noto Sans',serif;font-style:italic;font-weight:500}
+.meaning{font-family:'Crimson Pro',serif;font-weight:600;font-size:30px;line-height:1.2}
+.answer{animation:up .3s ease-out both;text-align:center}
+.answer .meaning{font-size:26px}
+.answer .mr{color:var(--dim);margin-top:2px}
+.facts{margin-top:28px;text-align:left}
+.fact{display:grid;grid-template-columns:78px 1fr;gap:12px;padding:12px 0;font-size:14px}
+.fact>span:first-child{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);padding-top:2px}
+.fact .sub{color:var(--dim);font-size:13px;margin-top:2px}
+.chars>div{display:flex;align-items:baseline;gap:10px}
+.chars>div+div{margin-top:6px}
+.chars .cjk{font-size:22px;font-weight:600}
+.hints{display:flex;flex-direction:column;align-items:center;gap:10px;margin-top:6px}
+.hints .h{font-size:15px;color:var(--muted);animation:up .25s both}
+.writer{display:flex;flex-direction:column;align-items:center;gap:10px;margin:6px 0 4px}
+.writer .row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.writer .box{background:var(--surface);border-radius:14px;transition:box-shadow .2s}
+.writer .box.cur{box-shadow:0 0 0 2px var(--accent)}
+.writer .msg{font-size:13px;color:var(--dim);text-align:center}
+details.so summary{list-style:none;cursor:pointer;font-size:13px;color:var(--dim);text-align:center;padding:14px 0 0}
+details.so summary::-webkit-details-marker{display:none}
+
+/* colour that means something: deck tint before reveal, tone tint after */
+.wash{position:fixed;inset:0;pointer-events:none;z-index:0;transition:opacity .7s ease}
+.wash.deck{background:radial-gradient(120% 60% at 50% 0%,color-mix(in srgb,var(--deck) 20%,transparent),transparent 70%)}
+.wash.tone{background:radial-gradient(70% 50% at 15% 10%,color-mix(in srgb,var(--w1) 26%,transparent),transparent 75%),radial-gradient(70% 50% at 85% 10%,color-mix(in srgb,var(--w2) 26%,transparent),transparent 75%)}
+.sess{position:relative;min-height:100vh}
+.sess-top,.stage{position:relative;z-index:1}
+.sess-top{background:transparent}
+.sess-top .line>i{background:linear-gradient(90deg,var(--deck),color-mix(in srgb,var(--deck) 40%,var(--good)))}
+.hz span{transition:color .5s ease}
+.combo{font-size:13px;font-weight:700;color:var(--deck);white-space:nowrap;animation:pop .35s cubic-bezier(.2,1.6,.4,1) both}
+.combo .cjk{font-size:15px}
+@keyframes pop{0%{transform:scale(.5);opacity:0}100%{transform:scale(1);opacity:1}}
+.rate .btn{--c:var(--muted);background:color-mix(in srgb,var(--c) 16%,var(--surface));color:var(--c)}
+.rate .btn:nth-child(1){--c:var(--again)}.rate .btn:nth-child(2){--c:var(--hard)}
+.rate .btn:nth-child(3){--c:var(--good)}.rate .btn:nth-child(4){--c:var(--easy)}
+.rate .btn.primary{background:var(--good);color:#fff}
+.flash{position:fixed;inset:0;pointer-events:none;z-index:65;background:radial-gradient(90% 45% at 50% 100%,color-mix(in srgb,var(--f) 40%,transparent),transparent 70%);animation:flashA .55s ease-out both}
+@keyframes flashA{0%{opacity:0}25%{opacity:1}100%{opacity:0}}
+.stage.again{animation:shake .35s ease both}
+@keyframes shake{0%,100%{transform:none}25%{transform:translateX(-8px)}50%{transform:translateX(6px)}75%{transform:translateX(-3px)}}
+.confetti{position:fixed;inset:0;pointer-events:none;z-index:90}
+@media (prefers-reduced-motion:reduce){.wash,.hz span{transition:none}.flash,.combo,.seal,.stage,.stage.again{animation:none}}
+.dock{position:fixed;z-index:60;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:460px;padding:24px 16px calc(16px + env(safe-area-inset-bottom,0));background:linear-gradient(to bottom,transparent,var(--bg) 22px);z-index:60}
+.dock .kbd{font-size:12px;color:var(--dim);text-align:center;margin-top:10px}
+.rate{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.rate .btn{height:60px;flex-direction:column;gap:1px;padding:0 4px;font-size:15px}
+.rate .btn small{font-size:12px;font-weight:500;opacity:.7}
+
+/* ── summary ── */
+.seal{width:104px;height:104px;border-radius:18px;background:var(--accent);color:var(--on-accent);display:flex;align-items:center;justify-content:center;font-family:'Noto Serif SC',serif;font-size:58px;font-weight:700;margin:20px auto 22px;animation:stamp .5s cubic-bezier(.2,1.3,.4,1) both}
+.tags{display:flex;flex-wrap:wrap;gap:6px 14px}
+.tags span{font-family:'Noto Serif SC',serif;font-size:22px;font-weight:500}
+
+/* ── progress ── */
+.heat{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.heat i{aspect-ratio:1;border-radius:4px;background:var(--surface)}
+.fc{display:flex;align-items:flex-end;gap:10px;height:100px}
+.fc>div{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:6px;height:100%;font-size:12px;color:var(--dim)}
+.fc i{width:100%;border-radius:4px;background:color-mix(in srgb,var(--accent) 35%,transparent)}
+.fc .on i{background:var(--accent)}
+.fc .on{color:var(--text)}
+.setrow{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 0}
+.switch{width:46px;height:28px;border-radius:14px;background:var(--hair);position:relative;flex-shrink:0;transition:background .2s}
+.switch::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;transition:left .2s}
+.switch.on{background:var(--accent)}
+.switch.on::after{left:21px}
+.swatches{display:flex;gap:12px}
+.swatches button{width:36px;height:36px;border-radius:50%;position:relative}
+.swatches button.on::after{content:"";position:absolute;inset:-5px;border-radius:50%;border:2px solid var(--accent)}
+
+/* ── bridge ── */
+.pair{display:flex;align-items:flex-end;justify-content:center;gap:36px;padding:26px 0 10px;animation:inR .22s ease-out both}
+.pair>div{text-align:center}
+.pair .k{font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin-bottom:8px}
+.pair .cjk{font-size:72px;font-weight:600;line-height:1.05}
+.pair .arrow{color:var(--dim);font-size:20px;padding-bottom:34px}
+
+.undo{position:fixed;left:50%;bottom:122px;transform:translateX(-50%);display:flex;align-items:center;gap:14px;background:var(--text);color:var(--bg);padding:8px 8px 8px 16px;border-radius:12px;font-size:14px;z-index:70;animation:up .2s both;white-space:nowrap}
+.undo button{color:var(--bg);font-weight:700;padding:6px 10px;border-radius:8px;background:color-mix(in srgb,var(--bg) 14%,transparent)}
+.inp{height:48px;border-radius:12px;background:var(--surface);border:1px solid var(--hair);color:var(--text);padding:0 14px;font-size:16px;font-family:inherit;width:100%}
+.inp:focus{outline:2px solid var(--accent);outline-offset:-1px}
+.rec{padding:14px 0;display:grid;gap:4px}
+.rec .w{font-family:'Noto Serif SC',serif;font-size:17px;color:var(--dim);text-decoration:line-through;text-decoration-color:var(--again)}
+.rec .c{font-family:'Noto Serif SC',serif;font-size:19px;color:var(--good)}
+.rec .e{font-size:13px;color:var(--muted)}
+.toast{position:fixed;left:50%;bottom:100px;transform:translateX(-50%);background:var(--text);color:var(--bg);padding:10px 16px;border-radius:12px;font-size:14px;z-index:300;animation:up .25s both;white-space:nowrap}
+.notice{font-size:13px;color:var(--muted);padding:12px 0;border-bottom:1px solid var(--hair);margin-bottom:8px}
+.empty{text-align:center;padding:60px 16px;color:var(--dim)}
+.empty .cjk{display:block;font-size:44px;color:var(--accent);margin-bottom:12px}
+</style>
+</head>
+<body data-theme="ink">
+<div id="app"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/hanzi-writer@3.5.0/dist/hanzi-writer.min.js"></script>
+<script type="text/babel" data-presets="react">
+const {useState,useEffect,useRef,useMemo,useCallback} = React;
+
+/* ═════════════ CONFIG ═════════════ */
+const SUPABASE_URL = "https://ulgrfumbwjovbjzjiems.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVsZ3JmdW1id2pvdmJqemppZW1zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjczNzIyNjcsImV4cCI6MjA4Mjk0ODI2N30.ix5Vh4Y3GXNbQbzVtTD_WSko0L3cr5q_eCnTuDEMh7M";
+const sb = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+
+const SESSION_SIZE = 15;      // cards per session
+const NEW_PER_SESSION = 8;    // max brand-new words per session
+const MASTERED_DAYS = 21;     // interval at which a word counts as "known"
+const DAY = 864e5, MIN = 6e4;
+
+const MODES = [
+  {key:"recognize", glyph:"认", label:"Recognize", desc:"See hanzi → recall meaning"},
+  {key:"recall",    glyph:"想", label:"Recall",    desc:"See meaning → recall hanzi"},
+  {key:"listen",    glyph:"听", label:"Listen",    desc:"Hear it → recall word"},
+  {key:"write",     glyph:"写", label:"Write",     desc:"Write it stroke by stroke"},
+];
+const THEMES = [
+  {key:"ink",bg:"linear-gradient(135deg,#121417 50%,#e0714f 50%)"},
+  {key:"paper",bg:"linear-gradient(135deg,#f6f2ea 50%,#b4442b 50%)"},
+  {key:"night",bg:"linear-gradient(135deg,#0d1120 50%,#d9ad4f 50%)"},
+  {key:"jade",bg:"linear-gradient(135deg,#0c1310 50%,#5cc28e 50%)"},
+  {key:"sunset",bg:"linear-gradient(135deg,#1a1310 50%,#f08c5a 50%)"},
+];
+const SIM = {
+  identical:{label:"Same character",short:"Same"},
+  simplified:{label:"Simplified in Chinese",short:"Simplified"},
+  similar_meaning:{label:"Similar meaning",short:"Similar"},
+  different_meaning:{label:"Different meaning",short:"Different"},
+  no_match:{label:"No kanji match",short:"No match"},
+};
+
+/* Offline sample — only used when the database can't be reached */
+const SAMPLE_SOURCES=[{id:0,source_key:"sample",label:"Offline sample",category:"Sample",icon:"样",word_count:6}];
+const SAMPLE_WORDS=[
+  {id:-1,source_id:0,hanzi:"你好",pinyin:"nǐ hǎo",marathi:"नि हाव",meaning:"hello",lecture:"Greetings",has_tone_rule:true,hint:null},
+  {id:-2,source_id:0,hanzi:"谢谢",pinyin:"xiè xie",marathi:"श्ये श्ये",meaning:"thank you",lecture:"Greetings",hint:null},
+  {id:-3,source_id:0,hanzi:"学",pinyin:"xué",marathi:"श्युए",meaning:"to study, to learn",lecture:"Verbs",hint:null},
+  {id:-4,source_id:0,hanzi:"大",pinyin:"dà",marathi:"दा",meaning:"big",lecture:"Adjectives",hint:null},
+  {id:-5,source_id:0,hanzi:"不客气",pinyin:"bú kè qi",marathi:"बु खे छि",meaning:"you're welcome",lecture:"Greetings",has_tone_rule:true,hint:null},
+  {id:-6,source_id:0,hanzi:"一个",pinyin:"yí gè",marathi:"यि गे",meaning:"one (of something)",lecture:"Numbers",has_tone_rule:true,hint:null},
+];
+
+/* ═════════════ STORAGE (this device) ═════════════ */
+const LS={
+  get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},
+  set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}},
+};
+const dayKey=(t=Date.now())=>{const d=new Date(t);return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")};
+const startOfTomorrow=()=>{const d=new Date();d.setHours(24,0,0,0);return d.getTime()};
+
+/* ═════════════ SPACED REPETITION (SM-2 style) ═════════════
+   card = {s: sourceId, ef, iv (days), reps, lapses, due (ms), last (ms)}
+   grade 0 Again · 1 Hard · 2 Good · 3 Easy                         */
+function schedule(card,grade,now=Date.now()){
+  const c=card?{...card}:{ef:2.5,iv:0,reps:0,lapses:0};
+  if(grade===0){c.lapses++;c.reps=0;c.iv=0;c.ef=Math.max(1.3,c.ef-.2);c.due=now+MIN;}
+  else{
+    if(grade===1){c.iv=c.reps===0?1:Math.max(1,Math.round(c.iv*1.2));c.ef=Math.max(1.3,c.ef-.15);}
+    if(grade===2){c.iv=c.reps===0?1:c.reps===1?3:Math.round(c.iv*c.ef);}
+    if(grade===3){c.iv=c.reps===0?4:Math.round(Math.max(c.iv,1)*c.ef*1.3);c.ef+=.15;}
+    c.iv=Math.min(c.iv,365);c.reps++;c.due=now+c.iv*DAY;
+  }
+  c.last=now;return c;
+}
+const fmtIv=(card,g)=>{const n=schedule(card,g);if(g===0)return"<1 min";const d=n.iv;return d<30?d+"d":d<365?Math.round(d/30)+"mo":"1y"};
+const isDue=(c,now=Date.now())=>c&&c.due<=now;
+const isKnown=c=>c&&c.iv>=MASTERED_DAYS;
+
+/* ═════════════ DATA ═════════════ */
+const toneOf=syl=>{const s=(syl||"").normalize("NFD");if(/̄/.test(s))return 1;if(/́/.test(s))return 2;if(/̌/.test(s))return 3;if(/̀/.test(s))return 4;return 5};
+const hanChars=s=>[...(s||"")].filter(ch=>/\p{Script=Han}/u.test(ch));
+
+async function sbAll(build){ // pages past Supabase's 1000-row cap
+  let out=[],from=0;
+  for(;;){const{data,error}=await build().range(from,from+999);if(error)throw error;out=out.concat(data||[]);if(!data||data.length<1000)break;from+=1000;}
+  return out;
+}
+async function inChunks(table,cols,field,values){
+  const out=[];for(let i=0;i<values.length;i+=150){const{data,error}=await sb.from(table).select(cols).in(field,values.slice(i,i+150));if(error)throw error;out.push(...(data||[]))}return out;
+}
+async function loadSources(){
+  if(!sb)throw new Error("Supabase library not loaded");
+  const{data,error}=await sb.from("chinese_study_app_sources").select("*").eq("is_active",true).order("display_order");
+  if(error)throw error;return data;
+}
+// Class Notes + My Mistakes live in owner-only tables (RLS: auth.uid() = user_id)
+async function loadPersonal(){
+  const[n,m]=await Promise.all([
+    sbAll(()=>sb.from("chinese_study_app_personal_notes").select("*").order("display_order")),
+    sbAll(()=>sb.from("chinese_study_app_mistakes").select("*").order("display_order"))]);
+  const out=[];
+  if(n.length)out.push({id:100,label:"Class Notes",category:"My notes",icon:"记",hue:"var(--d5)",word_count:n.length,personal:true,
+    words:n.map(r=>({id:1e6+r.id,source_id:100,hanzi:r.hanzi,pinyin:r.pinyin,meaning:r.meaning,lecture:r.topic,kind:r.kind,needs_check:r.needs_check,source_photo:r.source_photo}))});
+  if(m.length)out.push({id:101,label:"My Mistakes",category:"My notes",icon:"错",hue:"var(--d6)",word_count:m.length,personal:true,kind:"mistakes",
+    words:m.map(r=>({id:2e6+r.id,source_id:101,hanzi:r.correct,pinyin:"",meaning:r.explanation,wrong:r.wrong,correct:r.correct,lecture:r.category,needs_check:r.needs_check,source_photo:r.source_photo}))});
+  return out;
+}
+const deckCache={};
+async function loadDeck(src){
+  if(deckCache[src.id])return deckCache[src.id];
+  const p=(async()=>{
+    if(src.id===0)return{words:SAMPLE_WORDS,chars:{},bridge:{},sandhi:{},rules:{}};
+    if(src.kind==="mistakes")return{words:src.words,chars:{},bridge:{},sandhi:{},rules:{}};
+    const words=src.words||await sbAll(()=>sb.from("chinese_study_app_words").select("*").eq("source_id",src.id).order("display_order",{ascending:true}));
+    // enrichment is best-effort: a failure here must not block studying
+    let chars={},bridge={},sandhi={},rules={};
+    try{
+      const uniq=[...new Set(words.flatMap(w=>hanChars(w.hanzi)))];
+      const hz=await inChunks("chinese_study_app_hanzi_database","id,hanzi,pinyin,meaning,radical,stroke_count,hsk_level","hanzi",uniq);
+      hz.forEach(h=>{if(!chars[h.hanzi])chars[h.hanzi]=h});
+      const ids=Object.values(chars).map(h=>h.id);
+      const br=ids.length?await inChunks("chinese_study_app_japanese_bridge","hanzi_db_id,japanese_kanji,similarity,notes","hanzi_db_id",ids):[];
+      br.forEach(b=>{bridge[b.hanzi_db_id]=b});
+      const tw=words.filter(w=>w.has_tone_rule).map(w=>w.id);
+      if(tw.length){
+        (await inChunks("chinese_study_app_tone_rule_words","word_id,rule_id,original_pinyin,modified_pinyin","word_id",tw)).forEach(t=>{(sandhi[t.word_id]=sandhi[t.word_id]||[]).push(t)});
+        const{data:r}=await sb.from("chinese_study_app_tone_rules").select("id,rule_name,description");(r||[]).forEach(x=>{rules[x.id]=x});
+      }
+    }catch(e){console.warn("Enrichment skipped:",e)}
+    return{words,chars,bridge,sandhi,rules};
+  })();
+  deckCache[src.id]=p;p.catch(()=>{delete deckCache[src.id]});return p;
+}
+
+/* ═════════════ AUDIO ═════════════ */
+let zhVoice=null;
+function pickVoice(){if(!("speechSynthesis" in window))return;const vs=speechSynthesis.getVoices();zhVoice=vs.find(v=>/zh[-_]CN/i.test(v.lang))||vs.find(v=>/^zh|cmn/i.test(v.lang))||null}
+if("speechSynthesis" in window){pickVoice();speechSynthesis.onvoiceschanged=pickVoice}
+let audioUnlocked=false;
+function unlockAudio(){
+  if(audioUnlocked||!("speechSynthesis" in window))return;
+  audioUnlocked=true;
+  try{const u=new SpeechSynthesisUtterance(" ");u.volume=0;speechSynthesis.speak(u)}catch(e){}
+}
+["pointerdown","keydown","touchend"].forEach(ev=>window.addEventListener(ev,unlockAudio,{capture:true}));
+function speak(text){
+  if(!("speechSynthesis" in window)||!text)return false;
+  const u=new SpeechSynthesisUtterance(text);u.lang="zh-CN";if(zhVoice)u.voice=zhVoice;u.rate=.8;
+  speechSynthesis.cancel();speechSynthesis.speak(u);return true;
+}
+
+/* ═════════════ SMALL COMPONENTS ═════════════ */
+const deckHue=src=>src?.hue||`var(--d${((src?.display_order||src?.id||1)-1+500)%5})`;
+const reducedMotion=()=>window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches;
+function confetti(n=70){
+  if(reducedMotion())return;
+  const cv=document.createElement("canvas");cv.className="confetti";document.body.appendChild(cv);
+  const dpr=window.devicePixelRatio||1,W=innerWidth,H=innerHeight;cv.width=W*dpr;cv.height=H*dpr;
+  const x=cv.getContext("2d");x.scale(dpr,dpr);
+  const cs=["--t1","--t2","--t3","--t4","--accent"].map(v=>getComputedStyle(document.body).getPropertyValue(v).trim());
+  const ps=[...Array(n)].map(()=>({x:W/2+(Math.random()-.5)*80,y:H*.35,vx:(Math.random()-.5)*9,vy:-Math.random()*9-4,r:Math.random()*6+4,a:Math.random()*6,va:(Math.random()-.5)*.3,c:cs[Math.floor(Math.random()*cs.length)]}));
+  const t0=performance.now();
+  (function f(t){const k=(t-t0)/1600;x.clearRect(0,0,W,H);
+    ps.forEach(p=>{p.vy+=.28;p.x+=p.vx;p.y+=p.vy;p.a+=p.va;x.save();x.globalAlpha=Math.max(0,1-k);x.translate(p.x,p.y);x.rotate(p.a);x.fillStyle=p.c;x.fillRect(-p.r/2,-p.r/4,p.r,p.r/2);x.restore()});
+    if(k<1)requestAnimationFrame(f);else cv.remove()})(t0);
+}
+const Svg=({d,size=20,fill})=><svg width={size} height={size} viewBox="0 0 24 24" fill={fill||"none"} stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">{d}</svg>;
+const I={
+  speaker:s=><Svg size={s} d={<><path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M19 5a10 10 0 0 1 0 14"/></>}/>,
+  x:s=><Svg size={s} d={<><path d="M18 6 6 18"/><path d="M6 6l12 12"/></>}/>,
+  back:s=><Svg size={s} d={<path d="m15 18-6-6 6-6"/>}/>,
+  next:s=><Svg size={s} d={<path d="m9 18 6-6-6-6"/>}/>,
+  play:s=><Svg size={s} fill="currentColor" d={<path d="M7 4.5v15l12-7.5z"/>}/>,
+  bulb:s=><Svg size={s} d={<><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.4 1 2.3h6c0-.9.4-1.8 1-2.3A7 7 0 0 0 12 2z"/></>}/>,
+};
+
+function Pinyin({text,size=26,style}){
+  return <span className="py" style={{fontSize:size,...style}}>{(text||"").split(/(\s+)/).map((p,i)=>/\s+/.test(p)?p:<span key={i} style={{color:`var(--t${toneOf(p)})`}}>{p}</span>)}</span>;
+}
+function Ring({value,max,size=96,stroke=6,children}){
+  const r=(size-stroke)/2,c=2*Math.PI*r,p=Math.min(1,max?value/max:0);
+  return <div className="ring" style={{position:"relative",width:size,height:size,flexShrink:0}}>
+    <svg width={size} height={size}><circle cx={size/2} cy={size/2} r={r} fill="none" stroke="var(--hair)" strokeWidth={stroke}/>
+      <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="var(--accent)" strokeWidth={stroke} strokeLinecap="round" strokeDasharray={c} strokeDashoffset={c*(1-p)} style={{transition:"stroke-dashoffset .6s"}}/></svg>
+    <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}>{children}</div></div>;
+}
+function Head({glyph,title,sub,right,onBack}){
+  return <div className="head up">
+    {onBack?<button className="ibtn" style={{marginLeft:-10}} onClick={onBack} aria-label="Back">{I.back(22)}</button>:<div className="g">{glyph}</div>}
+    <div style={{minWidth:0}}><div className="t">{title}</div>{sub&&<div className="s">{sub}</div>}</div>
+    {right&&<div className="r">{right}</div>}
+  </div>;
+}
+function Sec({title,aside,children,delay=0,style}){
+  return <section className="sec up" style={{animationDelay:delay+"ms",...style}}>
+    {title&&<div className="sec-t"><span>{title}</span>{aside&&<span className="aside">{aside}</span>}</div>}{children}</section>;
+}
+function Toast({msg}){return msg?<div className="toast">{msg}</div>:null}
+
+/* ═════════════ STATS HELPERS ═════════════ */
+function streakOf(log){
+  let n=0,t=Date.now();
+  if(!(log[dayKey(t)]?.reviews>0))t-=DAY;           // today not done yet → streak still alive from yesterday
+  while(log[dayKey(t)]?.reviews>0){n++;t-=DAY}
+  return n;
+}
+function deckStats(srs,srcId,total,now=Date.now()){
+  let seen=0,due=0,known=0;
+  for(const k in srs){const c=srs[k];if(c.s!==srcId)continue;seen++;if(isDue(c,now))due++;if(isKnown(c))known++}
+  return{seen,due,known,fresh:Math.max(0,(total||0)-seen)};
+}
+
+
+/* ═════════════ HOME ═════════════ */
+function Home({sources,srs,log,goal,lastDeckId,onOpenDeck,onAllDecks,onQuickStart,offline,signedOut,onSignIn}){
+  const today=log[dayKey()]||{reviews:0};
+  const streak=streakOf(log);
+  const last=sources.find(s=>s.id===lastDeckId)||sources[0];
+  const st=last?deckStats(srs,last.id,last.word_count):null;
+  const totalDue=sources.reduce((a,s)=>a+deckStats(srs,s.id,s.word_count).due,0);
+  const done=today.reviews>=goal;
+  // last-used deck first, then decks with the most due cards, then decks already started
+  const recent=[...sources].sort((a,b)=>{const sa=deckStats(srs,a.id,a.word_count),sb=deckStats(srs,b.id,b.word_count);
+    return (b.id===last?.id)-(a.id===last?.id)||sb.due-sa.due||sb.seen-sa.seen}).slice(0,3);
+  const days=[...Array(7)].map((_,i)=>{const t=Date.now()-(6-i)*DAY;return{d:"SMTWTFS"[new Date(t).getDay()],ok:(log[dayKey(t)]?.reviews||0)>0,today:i===6}});
+  const greet=(()=>{const h=new Date().getHours();return h<12?"早上好":h<18?"下午好":"晚上好"})();
+  const mins=Math.max(1,Math.ceil(Math.min(SESSION_SIZE,(st?.due||0)+Math.min(st?.fresh||0,NEW_PER_SESSION)||SESSION_SIZE)*12/60));
+
+  return <div className="screen">
+    {offline&&<div className="notice">Database unreachable — showing an offline sample deck.</div>}
+    <Head glyph="学" title={greet} sub="Ready for today's practice?"
+      right={<><div className="cjk acc" style={{fontSize:22,fontWeight:600,lineHeight:1}}>火 {streak}</div><div className="dim small">day streak</div></>}/>
+
+    {last&&<Sec title="Today" delay={40}>
+      <div className="goal">
+        <Ring value={today.reviews} max={goal}><div className="serif" style={{fontSize:26,fontWeight:700,lineHeight:1}}>{today.reviews}</div><div className="dim" style={{fontSize:11}}>of {goal}</div></Ring>
+        <div style={{minWidth:0}}>
+          <div className="serif" style={{fontSize:22,fontWeight:700,lineHeight:1.15}}>{done?"Daily goal reached":`${goal-today.reviews} cards to go`}</div>
+          <div className="muted small" style={{marginTop:4}}>{last.label} · <span className={st.due?"acc":""}>{st.due} due</span> · {Math.min(st.fresh,NEW_PER_SESSION)} new</div>
+        </div>
+      </div>
+      <button className="btn primary full" style={{marginTop:22}} onClick={()=>onQuickStart(last)}>
+        {I.play(15)} {st.due||st.fresh?(done?"Practice more":"Start session"):"Extra practice"}<span style={{opacity:.7,fontWeight:500}}>· {mins} min</span></button>
+    </Sec>}
+
+    <Sec title="This week" delay={80}>
+      <div className="week">{days.map((d,i)=><div key={i} className={d.today?"today":""}>{d.d}<i className={d.ok?"ok":""}/></div>)}</div>
+    </Sec>
+
+    <Sec title="Continue" aside={totalDue?`${totalDue} due in all decks`:null} delay={120}>
+      <div className="list">{recent.map(s=><DeckRow key={s.id} s={s} srs={srs} onClick={()=>onOpenDeck(s)}/>)}</div>
+      {sources.length>recent.length&&<button className="btn sm text" style={{marginTop:6,paddingLeft:0}} onClick={onAllDecks}>All {sources.length} decks {I.next(16)}</button>}
+      {signedOut&&<button className="btn sm text" style={{marginTop:2,paddingLeft:0}} onClick={onSignIn}>Sign in to add your Class Notes and mistakes {I.next(16)}</button>}
+    </Sec>
+  </div>;
+}
+function DeckRow({s,srs,onClick}){
+  const st=deckStats(srs,s.id,s.word_count);
+  const pct=s.word_count?st.seen/s.word_count*100:0;
+  return <button className="deck" onClick={onClick} style={{"--accent":deckHue(s)}}>
+    <div className="g" style={{color:deckHue(s)}}>{s.icon||"字"}</div>
+    <div style={{flex:1,minWidth:0}}>
+      <div className="nm">{s.label}</div>
+      <div className="mt">{st.seen?`${st.known} known · ${st.seen-st.known} learning · `:""}{st.fresh} new</div>
+      <div className="line"><i style={{width:pct+"%"}}/></div>
+    </div>
+    <span className={"due"+(st.due?"":" z")}>{st.due?st.due+" due":!st.seen?"Start":st.fresh?"Continue":"Done"}</span>
+  </button>;
+}
+function DeckList({sources,srs,onOpen}){
+  const cats=[...new Set(sources.map(s=>s.category||"Other"))];
+  return <div className="screen">
+    <Head glyph="书" title="Decks" sub="Choose a deck, then a chapter or the whole set"/>
+    {cats.map((c,i)=><Sec key={c} title={c} delay={40+i*40}>
+      <div className="list">{sources.filter(s=>(s.category||"Other")===c).map(s=><DeckRow key={s.id} s={s} srs={srs} onClick={()=>onOpen(s)}/>)}</div>
+    </Sec>)}
+  </div>;
+}
+
+/* ═════════════ DECK DETAIL ═════════════ */
+function DeckDetail({src,srs,mode,setMode,onBack,onStart}){
+  const[data,setData]=useState(null),[err,setErr]=useState(null),[chapter,setChapter]=useState(null);
+  useEffect(()=>{let ok=true;loadDeck(src).then(d=>ok&&setData(d)).catch(e=>ok&&setErr(e.message||String(e)));return()=>{ok=false}},[src.id]);
+  const chapters=useMemo(()=>{
+    if(!data)return[];const m=new Map();
+    data.words.forEach(w=>{const k=w.lecture||"—";if(!m.has(k))m.set(k,[]);m.get(k).push(w)});
+    return[...m.entries()].map(([k,ws])=>({k,ws,seen:ws.filter(w=>srs[w.id]).length,due:ws.filter(w=>isDue(srs[w.id])).length}));
+  },[data,srs]);
+  const st=deckStats(srs,src.id,data?data.words.length:src.word_count);
+  const pool=chapter?chapters.find(c=>c.k===chapter)?.ws:data?.words;
+  const m=MODES.find(x=>x.key===mode);
+
+  return <div className="screen">
+    <Head onBack={onBack} title={src.label} sub={`${src.category} · ${data?data.words.length:src.word_count} ${src.kind==="mistakes"?"mistakes":"cards"}`}
+      right={<div className="cjk" style={{fontSize:34,fontWeight:600,color:deckHue(src)}}>{src.icon}</div>}/>
+
+    <Sec delay={40} style={{marginTop:24}}>
+      <div className="nums">
+        <div><div className="v acc">{st.due}</div><div className="l">Due now</div></div>
+        <div><div className="v">{st.seen-st.known}</div><div className="l">Learning</div></div>
+        <div><div className="v">{st.known}</div><div className="l">Known</div></div>
+      </div>
+    </Sec>
+
+    {src.kind!=="mistakes"&&<Sec title="Practice mode" aside={m.desc} delay={80}>
+      <div className="btns">{MODES.map(x=><button key={x.key} className={"btn sm"+(mode===x.key?" on":"")} onClick={()=>setMode(x.key)}><span className="cjk">{x.glyph}</span>{x.label}</button>)}</div>
+    </Sec>}
+
+    {err&&<div className="notice" style={{marginTop:24}}>Couldn't load words: {err}</div>}
+    {!data&&!err&&<div className="empty"><span className="cjk">学</span>Loading {src.label}…</div>}
+    {data&&<Sec title="Chapters" aside={chapter?<button className="acc" onClick={()=>setChapter(null)}>Show all</button>:`${chapters.length} chapters`} delay={120}>
+      <div className="chs">{chapters.map(c=><button key={c.k} className={"btn"+(chapter===c.k?" on":"")} onClick={()=>setChapter(chapter===c.k?null:c.k)}>
+        <b className={/\p{Script=Han}/u.test(c.k)?"cjk":""}>{c.k}</b>
+        <small>{c.due?`${c.due} due`:`${c.seen}/${c.ws.length}`}</small>
+        <div className="line" style={{marginTop:4}}><i style={{width:(c.seen/c.ws.length*100)+"%"}}/></div></button>)}</div>
+    </Sec>}
+
+    {data&&src.kind==="mistakes"&&<Sec title="Record" aside={`${pool.length} ${chapter||"mistakes"}`} delay={160}>
+      <div className="list">{pool.map(x=><div key={x.id} className="rec">
+        <div className="w">{x.wrong}</div><div className="c">{x.correct}</div>
+        <div className="e">{x.meaning}{x.needs_check?" · check photo":""}</div></div>)}</div>
+    </Sec>}
+
+    {data&&<div className="dock">
+      <button className="btn primary full" onClick={()=>onStart(src,data,pool,mode)}>{I.play(15)} Start {chapter?`“${chapter}”`:"session"} · {src.kind==="mistakes"?"Fix the mistakes":m.label}</button>
+    </div>}
+  </div>;
+}
+
+/* ═════════════ SESSION BUILDER ═════════════ */
+function buildQueue(pool,srs,{size=SESSION_SIZE,newMax=NEW_PER_SESSION}={}){
+  const now=Date.now();
+  const due=pool.filter(w=>isDue(srs[w.id],now)).sort((a,b)=>srs[a.id].due-srs[b.id].due);
+  const fresh=pool.filter(w=>!srs[w.id]);
+  let q=due.slice(0,size);
+  q=q.concat(fresh.slice(0,Math.min(newMax,size-q.length)));
+  let extra=false;
+  if(!q.length){ // nothing due or new → practice the weakest learned words
+    extra=true;q=pool.filter(w=>srs[w.id]).sort((a,b)=>(srs[a.id].ef-srs[b.id].ef)||(srs[a.id].iv-srs[b.id].iv)).slice(0,size);
+  }
+  // interleave new words among reviews so new ones aren't all at the end
+  const rv=q.filter(w=>srs[w.id]),nw=q.filter(w=>!srs[w.id]),out=[];
+  while(rv.length||nw.length){if(rv.length)out.push(rv.shift());if(rv.length)out.push(rv.shift());if(nw.length)out.push(nw.shift())}
+  return{queue:out,extra};
+}
+
+
+/* ═════════════ STROKE WRITER (Hanzi Writer) ═════════════ */
+const cssVar=n=>getComputedStyle(document.body).getPropertyValue(n).trim();
+function StrokeQuiz({chars,onComplete,revealed}){
+  const ref=useRef(null),[cur,setCur]=useState(0),[mistakes,setMistakes]=useState(0),[failed,setFailed]=useState(!window.HanziWriter);
+  const size=chars.length>2?96:chars.length===2?136:200;
+  useEffect(()=>{
+    if(!window.HanziWriter||!ref.current)return;
+    const ink=cssVar("--text"),acc=cssVar("--accent"),hair=cssVar("--hair");
+    const writers=[...ref.current.querySelectorAll(".box")].map((el,i)=>{el.innerHTML="";
+      return HanziWriter.create(el,chars[i],{width:size,height:size,padding:10,showOutline:revealed,showCharacter:revealed,
+        strokeColor:ink,outlineColor:hair,drawingColor:acc,highlightColor:acc,strokeAnimationSpeed:1.4,delayBetweenStrokes:120,
+        onLoadCharDataError:()=>setFailed(true)})});
+    if(revealed){(async()=>{for(const w of writers){try{await w.animateCharacter()}catch(e){}}})()}
+    else{
+      let i=0;const go=()=>{if(i>=writers.length){onComplete&&onComplete();return}setCur(i);
+        writers[i].quiz({showHintAfterMisses:2,highlightOnComplete:true,onMistake:()=>setMistakes(m=>m+1),onComplete:()=>{i++;setTimeout(go,300)}})};
+      go();
+    }
+    return()=>writers.forEach(w=>{try{w.cancelQuiz&&w.cancelQuiz()}catch(e){}});
+  },[chars.join(""),revealed]);
+  if(!chars.length)return null;
+  if(failed)return <div className="writer"><div className="msg">Stroke data couldn't load (offline?). Write it on paper, then tap Show answer.</div></div>;
+  return <div className="writer" ref={ref}>
+    <div className="row">{chars.map((c,i)=><div key={c+i} className={"box"+(!revealed&&i===cur?" cur":"")} style={{width:size,height:size}}/>)}</div>
+    <div className="msg">{revealed?"Stroke order":mistakes?`${mistakes} stroke${mistakes>1?"s":""} off · a hint appears after 2 misses`:"Write each character · strokes are checked as you go"}</div>
+  </div>;
+}
+
+/* ═════════════ STUDY SESSION ═════════════ */
+function Session({src,deck,pool,mode:deckMode,srs,autoSpeak,onRate,onUndo,onExit,onFinish}){
+  const init=useMemo(()=>buildQueue(pool,srs),[]);
+  const[queue,setQueue]=useState(init.queue);
+  const[i,setI]=useState(0);
+  const[revealed,setRevealed]=useState(false);
+  const[hint,setHint]=useState(0);
+  const[results]=useState(()=>new Map());   // wordId → first grade this session
+  const[wasNew]=useState(()=>new Set(init.queue.filter(w=>!srs[w.id]).map(w=>w.id)));
+  const[t0]=useState(Date.now());
+  const[undo,setUndo]=useState(null);       // snapshot of the last rating, for a few seconds
+  const[strokesOpen,setStrokesOpen]=useState(false);
+  const restoring=useRef(false);
+  const[combo,setCombo]=useState(0);
+  const[flash,setFlash]=useState(null);
+  const[shake,setShake]=useState(false);
+  const w=queue[i];
+  const card=w?srs[w.id]:null;
+  const mode=w?.wrong?"fix":(deckMode==="write"&&hanChars(w?.hanzi).length>4)?"recall":deckMode;
+
+  useEffect(()=>{
+    window.scrollTo(0,0);setHint(0);setStrokesOpen(false);
+    if(restoring.current){restoring.current=false;setRevealed(true);return}
+    setRevealed(false);
+    if(w&&mode==="listen"&&audioUnlocked)setTimeout(()=>speak(w.hanzi),250);
+  },[i,queue.length===0]);
+  useEffect(()=>{if(undo){const t=setTimeout(()=>setUndo(null),4000);return()=>clearTimeout(t)}},[undo]);
+  useEffect(()=>{if(revealed&&autoSpeak&&mode!=="listen")speak(w.hanzi)},[revealed]);
+
+  const finish=useCallback(()=>{
+    const firsts=[...results.values()];
+    const uniq=(pred)=>queue.filter((x,j,a)=>pred(x)&&a.findIndex(y=>y.id===x.id)===j);
+    onFinish({reviewed:firsts.length,correct:firsts.filter(g=>g>0).length,secs:Math.round((Date.now()-t0)/1000),
+      newLearned:uniq(x=>wasNew.has(x.id)&&results.has(x.id)),missed:uniq(x=>results.get(x.id)===0),extra:init.extra});
+  },[queue]);
+
+  const rate=g=>{
+    if(!revealed||!w||shake)return;
+    const counted=!results.has(w.id);
+    const snap={i,queue,g,w,prev:srs[w.id],counted,isNew:counted&&wasNew.has(w.id),combo};
+    setFlash({c:["var(--again)","var(--hard)","var(--good)","var(--easy)"][g],k:Date.now()});
+    const nc=g>=2?combo+1:g===0?0:combo;setCombo(nc);
+    if(nc>combo&&nc>=5&&nc%5===0)confetti(40);
+    if(counted){results.set(w.id,g);onRate(w,g,snap.isNew)}
+    else onRate(w,g,false,true);           // relearning step: update schedule, don't count twice
+    let q=queue;
+    if(g===0){q=[...queue];q.splice(Math.min(i+4,q.length),0,w);setQueue(q)}   // see it again soon
+    const advance=()=>{if(i+1>=q.length)finish();else{setI(i+1);setUndo(snap)}};
+    if(g===0&&!reducedMotion()){setShake(true);setTimeout(()=>{setShake(false);advance()},300)}else advance();
+  };
+  const doUndo=()=>{
+    if(!undo)return;const u=undo;setUndo(null);
+    if(u.counted)results.delete(u.w.id);
+    onUndo(u.w,u.prev,u.counted,u.g,u.isNew);
+    restoring.current=true;setCombo(u.combo);setQueue(u.queue);setI(u.i);
+  };
+  // leaving mid-session still shows what was done
+  const exit=()=>{if(results.size)finish();else onExit()};
+
+  useEffect(()=>{
+    const k=e=>{
+      if((e.key===" "||e.key==="Enter")&&!revealed){e.preventDefault();setRevealed(true)}
+      else if(e.key==="Enter"&&revealed){e.preventDefault();rate(2)}
+      else if(revealed&&["1","2","3","4"].includes(e.key))rate(+e.key-1);
+      else if(e.key==="u"||e.key==="U"||(e.key==="z"&&(e.ctrlKey||e.metaKey))){e.preventDefault();doUndo()}
+      else if(e.key==="s"||e.key==="S")speak(w?.hanzi);
+      else if(e.key==="h"||e.key==="H")setHint(h=>h+1);
+      else if(e.key==="Escape")exit();
+    };
+    window.addEventListener("keydown",k);return()=>window.removeEventListener("keydown",k);
+  });
+
+  if(!w)return <div className="screen"><div className="empty"><span className="cjk">空</span>No words to study here yet.<br/><br/><button className="btn" onClick={onExit}>Back</button></div></div>;
+
+  const chars=hanChars(w.hanzi);
+  const syls=(w.pinyin||"").trim().split(/\s+/);
+  const charPy=(j,h)=>syls.length===chars.length?syls[j]:h.pinyin;
+  const hzSize=chars.length<=1?120:chars.length===2?96:chars.length===3?72:chars.length===4?60:Math.max(26,Math.min(44,330/chars.length));
+  const fixSize=Math.max(22,Math.min(38,320/Math.max(1,[...(w.wrong||"")].length)));
+  const isNew=!card&&wasNew.has(w.id);
+  const sandhi=(deck.sandhi[w.id]||[]).find(t=>t.modified_pinyin!==t.original_pinyin)||(deck.sandhi[w.id]||[])[0];
+  const rule=sandhi?deck.rules[sandhi.rule_id]:null;
+  const jp=chars.map(c=>{const h=deck.chars[c];const b=h&&deck.bridge[h.id];return b&&b.japanese_kanji?{c,...b}:null}).filter(Boolean);
+  const hints=mode==="fix"?[<>Look at: <b>{w.lecture}</b></>]:[w.hint&&w.hint,mode!=="recognize"&&<Pinyin text={w.pinyin} size={20}/>,mode==="recall"&&chars.length>1&&<>Starts with <span className="cjk" style={{fontSize:20}}>{chars[0]}</span></>].filter(Boolean);
+  const speakBtn=<button className="ibtn" onClick={()=>speak(w.hanzi)} aria-label="Play pronunciation">{I.speaker(22)}</button>;
+  const tag=<div className={"tag"+(isNew?" new":"")}>{mode==="fix"?"Find the mistake":isNew?(w.kind==="sentence"?"New sentence":"New word"):MODES.find(m=>m.key===mode).label}</div>;
+  const tones=syls.length===chars.length?syls.map(toneOf):null;
+  const Hz=()=>{let ci=0;return <div className="hz" style={{fontSize:hzSize}}>{[...w.hanzi].map((ch,j)=>{
+    const t=/\p{Script=Han}/u.test(ch)&&tones?tones[ci++]:null;
+    return <span key={j} style={revealed&&t?{color:`var(--t${t})`}:null}>{ch}</span>})}</div>};
+  const wt=(tones||syls.map(toneOf));
+  const w1=mode==="fix"?"var(--good)":`var(--t${wt[0]||5})`,w2=mode==="fix"?"var(--good)":`var(--t${wt[wt.length-1]||5})`;
+
+  return <div className="sess" style={{"--deck":deckHue(src),"--w1":w1,"--w2":w2}}>
+    <div className="wash deck" style={{opacity:revealed?0:1}}/>
+    <div className="wash tone" style={{opacity:revealed?1:0}}/>
+    <div className="sess-top">
+      <button className="ibtn" onClick={exit} aria-label="End session">{I.x(20)}</button>
+      <div className="line"><i style={{width:(i/queue.length*100)+"%"}}/></div>
+      {combo>=3&&<div className="combo" key={combo}><span className="cjk">连</span> ×{combo}</div>}
+      <div className="c">{i+1} / {queue.length}</div>
+    </div>
+
+    <div className={"stage"+(shake?" again":"")} key={i}>
+      {init.extra&&i===0&&<div className="notice" style={{textAlign:"center"}}>All caught up — extra practice on your weakest words.</div>}
+
+      <div className="prompt" style={mode==="write"?{minHeight:"auto",padding:"28px 0 20px"}:revealed?{minHeight:"auto",paddingTop:20}:null}>
+        {tag}
+        {mode==="recognize"&&<><Hz/>{revealed&&<Pinyin text={w.pinyin} size={chars.length>4?20:28}/>}{speakBtn}</>}
+        {mode==="recall"&&<><div className="meaning">{w.meaning}</div>{revealed&&<><Hz/><Pinyin text={w.pinyin} size={chars.length>4?20:26}/></>}{revealed&&speakBtn}</>}
+        {mode==="listen"&&<>{!revealed&&<button className="btn primary" style={{width:84,height:84,borderRadius:"50%",margin:"12px 0"}} onClick={()=>speak(w.hanzi)} aria-label="Play">{I.speaker(34)}</button>}
+          {!revealed&&<div className="dim small">{audioUnlocked?"Tap to replay · what did you hear?":"Tap to play · what did you hear?"}</div>}
+          {revealed&&<><Hz/><Pinyin text={w.pinyin} size={26}/>{speakBtn}</>}</>}
+        {mode==="write"&&<><div className="meaning">{w.meaning}</div><Pinyin text={w.pinyin} size={22}/></>}
+        {mode==="fix"&&<>
+          <div className="hz" style={{fontSize:fixSize,transition:"color .4s",...(revealed?{color:"var(--dim)",textDecoration:"line-through",textDecorationColor:"var(--again)",textDecorationThickness:2}:null)}}>{w.wrong}</div>
+          {revealed&&<div className="hz" style={{fontSize:fixSize,color:"var(--good)"}}>{w.correct}</div>}
+          {revealed&&speakBtn}</>}
+      </div>
+
+      {mode==="write"&&chars.length>0&&<StrokeQuiz key={w.id+"-"+revealed} chars={chars} revealed={revealed} onComplete={()=>setRevealed(true)}/>}
+
+      {!revealed&&hints.length>0&&<div className="hints">
+        {hints.slice(0,hint).map((h,j)=><div key={j} className="h">{h}</div>)}
+        {hint<hints.length&&<button className="btn sm text" onClick={()=>setHint(h=>h+1)}>{I.bulb(16)} Hint{hints.length>1?` ${hint+1}/${hints.length}`:""}</button>}
+      </div>}
+
+      {revealed&&<div className="answer">
+        {mode==="fix"?<div style={{fontSize:16,lineHeight:1.55,maxWidth:"34ch",margin:"0 auto"}}>{w.meaning}</div>
+          :mode!=="recall"&&mode!=="write"&&<div className="meaning">{w.meaning}</div>}
+        {w.marathi&&<div className="mr">{w.marathi}</div>}
+        <div className="facts list">
+          {chars.some(c=>deck.chars[c])&&<div className="fact"><span>{chars.length>1?"Chars":"Char"}</span><div className="chars">{chars.map((c,j)=>{const h=deck.chars[c];return h?<div key={j}>
+            <span className="cjk">{c}</span><div><Pinyin text={charPy(j,h)} size={17}/> <span className="muted">{(h.meaning||"").split(/[,;]/).slice(0,2).join(",")}</span>
+            <div className="sub">{h.radical&&<>radical <span className="cjk">{h.radical}</span> · </>}{h.stroke_count} strokes</div></div></div>:null})}</div></div>}
+          {sandhi&&<div className="fact"><span>Tone</span><div>
+            {sandhi.modified_pinyin!==sandhi.original_pinyin?<>Spoken as <Pinyin text={sandhi.modified_pinyin} size={18}/></>:<b style={{fontWeight:600}}>{rule?rule.rule_name:"Tone rule"}</b>}
+            {rule&&<div className="sub">{rule.description}</div>}</div></div>}
+          {jp.length>0&&<div className="fact"><span>Japanese</span><div>{jp.map((b,j)=><div key={j} style={j?{marginTop:6}:null}>
+            <span className="cjk" style={{fontSize:17}}>{b.c} → {b.japanese_kanji}</span> <span className={b.similarity==="identical"?"acc":"muted"} style={{fontSize:13}}>{(SIM[b.similarity]||{label:b.similarity}).label}</span>
+            {b.notes&&<div className="sub">{b.notes}</div>}</div>)}</div></div>}
+          {w.hint&&<div className="fact"><span>Hint</span><div>{w.hint}</div></div>}
+          {mode==="fix"&&<div className="fact"><span>Type</span><div>{w.lecture}</div></div>}
+          {w.needs_check&&<div className="fact"><span>Note</span><div className="muted">Scan was unclear — check against your photo{w.source_photo?<div className="sub">{w.source_photo}</div>:null}</div></div>}
+        </div>
+        {mode!=="write"&&mode!=="fix"&&chars.length>0&&chars.length<=4&&window.HanziWriter&&<details className="so" open={strokesOpen} onToggle={e=>setStrokesOpen(e.currentTarget.open)}><summary>{strokesOpen?"Hide":"Show"} stroke order</summary>{strokesOpen&&<div style={{marginTop:12}}><StrokeQuiz chars={chars} revealed/></div>}</details>}
+      </div>}
+    </div>
+
+    <div className="dock">
+      {!revealed?<>
+        <button className="btn primary full" onClick={()=>setRevealed(true)}>Show answer</button>
+        <div className="kbd">Space reveal · H hint · S speak</div>
+      </>:<>
+        <div className="rate">{["Again","Hard","Good","Easy"].map((n,g)=>
+          <button key={g} className={"btn"+(g===2?" primary":"")} onClick={()=>rate(g)}>{n}<small>{fmtIv(card,g)}</small></button>)}</div>
+        <div className="kbd">How well did you know it? · keys 1–4 · Enter = Good</div>
+      </>}
+    </div>
+    {flash&&<div className="flash" key={flash.k} style={{"--f":flash.c}} onAnimationEnd={()=>setFlash(null)}/>}
+    {undo&&<div className="undo">Rated {["Again","Hard","Good","Easy"][undo.g]}<button onClick={doUndo}>Undo</button></div>}
+  </div>;
+}
+
+/* ═════════════ SESSION SUMMARY ═════════════ */
+function Summary({res,src,log,goal,streakBefore,onAgain,onDone}){
+  const today=log[dayKey()]||{reviews:0};
+  const streak=streakOf(log);
+  const acc=res.reviewed?Math.round(res.correct/res.reviewed*100):0;
+  const glyph=acc>=90?"优":acc>=70?"好":"进";
+  const msg=acc>=90?"Excellent":acc>=70?"Nice work":"Progress made";
+  useEffect(()=>{if(res.reviewed&&(acc>=70||today.reviews>=goal))setTimeout(()=>confetti(90),250)},[]);
+  return <div className="screen" style={{textAlign:"center"}}>
+    <div className="seal" style={{background:deckHue(src)}}>{glyph}</div>
+    <div className="serif" style={{fontSize:32,fontWeight:700,lineHeight:1.1}}>{msg}</div>
+    <div className="dim" style={{marginTop:4}}>{src.label} · {Math.floor(res.secs/60)}m {res.secs%60}s</div>
+    {streak>streakBefore&&<div className="acc up" style={{marginTop:14,fontWeight:600}}><span className="cjk">火</span> Streak extended to {streak} day{streak>1?"s":""}</div>}
+
+    <Sec delay={80} style={{textAlign:"left"}}>
+      <div className="nums">
+        <div><div className="v">{res.reviewed}</div><div className="l">Cards</div></div>
+        <div><div className="v">{acc}%</div><div className="l">Recalled</div></div>
+        <div><div className="v acc">{res.newLearned.length}</div><div className="l">New words</div></div>
+      </div>
+    </Sec>
+    <Sec title="Daily goal" aside={`${today.reviews} / ${goal}`} delay={120} style={{textAlign:"left"}}>
+      <div className="line"><i style={{width:Math.min(100,today.reviews/goal*100)+"%"}}/></div>
+    </Sec>
+    {res.newLearned.length>0&&<Sec title="New this session" delay={160} style={{textAlign:"left"}}><div className="tags">{res.newLearned.map(w=><span key={w.id}>{w.hanzi}</span>)}</div></Sec>}
+    {res.missed.length>0&&<Sec title="Needs more practice" delay={200} style={{textAlign:"left"}}><div className="tags">{res.missed.map(w=><span key={w.id} className="acc">{w.hanzi}</span>)}</div></Sec>}
+
+    <div className="dock" style={{display:"flex",gap:8}}>
+      <button className="btn" style={{flex:1}} onClick={onDone}>Done</button>
+      <button className="btn primary" style={{flex:1.5}} onClick={onAgain}>{I.play(14)} Keep going</button>
+    </div>
+  </div>;
+}
+
+/* ═════════════ ACCOUNT ═════════════ */
+function Account({user}){
+  const[email,setEmail]=useState(""),[pw,setPw]=useState(""),[msg,setMsg]=useState(null),[busy,setBusy]=useState(false);
+  if(!sb)return <div className="dim small" style={{padding:"14px 0"}}>Sign-in is unavailable offline.</div>;
+  if(user)return <div className="setrow"><div>Signed in<div className="dim small">{user.email}</div></div>
+    <button className="btn sm" onClick={()=>sb.auth.signOut()}>Sign out</button></div>;
+  const google=async()=>{const{error}=await sb.auth.signInWithOAuth({provider:"google",options:{redirectTo:location.origin+location.pathname}});if(error)setMsg(error.message)};
+  const pwLogin=async e=>{e.preventDefault();setBusy(true);setMsg(null);
+    const{error}=await sb.auth.signInWithPassword({email:email.trim(),password:pw});setBusy(false);
+    if(error)setMsg(error.message==="Invalid login credentials"?"Email or password is wrong. If you only use Google, use the Google button.":error.message)};
+  return <div style={{padding:"14px 0",display:"grid",gap:10}}>
+    <div>Sign in to load your Class Notes and mistakes<div className="dim small">They're private: only your account can read them.</div></div>
+    <button className="btn primary full" onClick={google}>Sign in with Google</button>
+    <form onSubmit={pwLogin} style={{display:"grid",gap:8}}>
+      <input id="acct-email" className="inp" type="email" autoComplete="email" placeholder="Email" value={email} onChange={e=>setEmail(e.target.value)} required/>
+      <input id="acct-pw" className="inp" type="password" autoComplete="current-password" placeholder="Password" value={pw} onChange={e=>setPw(e.target.value)} required/>
+      <button className="btn full" disabled={busy}>{busy?"Signing in…":"Sign in with email"}</button>
+    </form>
+    {msg&&<div className="small acc">{msg}</div>}
+  </div>;
+}
+
+/* ═════════════ PROGRESS ═════════════ */
+function Progress({srs,log,goal,setGoal,theme,setTheme,autoSpeak,setAutoSpeak,onReset,user}){
+  const all=Object.values(srs);
+  const known=all.filter(isKnown).length,learning=all.length-known;
+  const totalReviews=Object.values(log).reduce((a,d)=>a+(d.reviews||0),0);
+  const streak=streakOf(log);
+  let best=0,run=0;Object.keys(log).sort().forEach((k,j,arr)=>{const prev=arr[j-1];const cont=prev&&(new Date(k)-new Date(prev))<=DAY*1.5;run=log[k].reviews>0?(cont?run+1:1):0;best=Math.max(best,run)});
+  const weeks=5,cells=[...Array(weeks*7)].map((_,j)=>{const t=Date.now()-(weeks*7-1-j)*DAY;return log[dayKey(t)]?.reviews||0});
+  const mx=Math.max(1,...cells);
+  const fc=[...Array(7)].map((_,j)=>{const lo=j===0?0:startOfTomorrow()+(j-1)*DAY,hi=startOfTomorrow()+j*DAY;return{l:j===0?"Today":["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][new Date(lo||Date.now()).getDay()],n:all.filter(c=>c.due>=lo&&c.due<hi).length}});
+  const fmx=Math.max(1,...fc.map(f=>f.n));
+  return <div className="screen">
+    <Head glyph="进" title="Progress" sub="Saved on this device"/>
+    <Sec delay={40} style={{marginTop:24}}>
+      <div className="nums two">
+        <div><div className="v acc"><span className="cjk" style={{fontSize:26}}>火</span> {streak}</div><div className="l">Day streak · best {Math.max(best,streak)}</div></div>
+        <div><div className="v">{known}</div><div className="l">Words known</div></div>
+        <div><div className="v">{learning}</div><div className="l">Learning</div></div>
+        <div><div className="v">{totalReviews}</div><div className="l">Total reviews</div></div>
+      </div>
+    </Sec>
+    <Sec title="Last 5 weeks" delay={80}>
+      <div className="heat">{cells.map((n,j)=><i key={j} title={n+" reviews"} style={n?{background:`color-mix(in srgb,var(--accent) ${30+70*n/mx}%,transparent)`}:null}/>)}</div>
+    </Sec>
+    <Sec title="Coming up" delay={120}>
+      <div className="fc">{fc.map((f,j)=><div key={j} className={j===0?"on":""}>{f.n}<i style={{height:Math.max(3,f.n/fmx*62)}}/>{f.l}</div>)}</div>
+    </Sec>
+    <Sec title="Account" delay={150}><div className="list"><Account user={user}/></div></Sec>
+    <Sec title="Settings" delay={160}>
+      <div className="list">
+        <div className="setrow"><div>Daily goal</div><div className="btns">{[10,20,30,50].map(g=><button key={g} className={"btn sm"+(goal===g?" on":"")} style={{flex:"none",minWidth:46}} onClick={()=>setGoal(g)}>{g}</button>)}</div></div>
+        <div className="setrow"><div>Auto-play pronunciation<div className="dim small">When the answer is shown</div></div>
+          <button className={"switch"+(autoSpeak?" on":"")} onClick={()=>setAutoSpeak(!autoSpeak)} aria-label="Toggle auto-play"/></div>
+        <div className="setrow"><div>Theme</div><div className="swatches">{THEMES.map(t=><button key={t.key} className={theme===t.key?"on":""} style={{background:t.bg}} onClick={()=>setTheme(t.key)} aria-label={t.key} title={t.key}/>)}</div></div>
+        <div className="setrow"><div>Reset progress<div className="dim small">Clears everything on this device</div></div><button className="btn sm" onClick={onReset}>Reset</button></div>
+      </div>
+    </Sec>
+  </div>;
+}
+
+/* ═════════════ JAPANESE BRIDGE ═════════════ */
+function Bridge(){
+  const[items,setItems]=useState(null),[err,setErr]=useState(null),[filter,setFilter]=useState("all"),[idx,setIdx]=useState(0);
+  useEffect(()=>{(async()=>{try{
+    if(!sb)throw new Error("offline");
+    const br=await sbAll(()=>sb.from("chinese_study_app_japanese_bridge").select("hanzi_db_id,japanese_kanji,similarity,notes").neq("japanese_kanji","").order("id"));
+    const hz=await inChunks("chinese_study_app_hanzi_database","id,hanzi,pinyin,meaning","id",[...new Set(br.map(b=>b.hanzi_db_id))]);
+    const m=Object.fromEntries(hz.map(h=>[h.id,h]));
+    setItems(br.filter(b=>m[b.hanzi_db_id]).map(b=>({...b,...m[b.hanzi_db_id]})));
+  }catch(e){setErr(e.message||String(e))}})()},[]);
+  const list=useMemo(()=>items?(filter==="all"?items:items.filter(x=>x.similarity===filter)):[],[items,filter]);
+  const counts=useMemo(()=>(items||[]).reduce((a,x)=>{a[x.similarity]=(a[x.similarity]||0)+1;return a},{}),[items]);
+  const n=list.length,b=n?list[idx%n]:null;
+  return <div className="screen">
+    <Head glyph="橋" title="Japanese Bridge" sub="Use the kanji you know to learn hanzi"/>
+    {err&&<div className="notice" style={{marginTop:24}}>Couldn't load bridge data: {err}</div>}
+    {!items&&!err&&<div className="empty"><span className="cjk">橋</span>Loading…</div>}
+    {items&&<>
+      <Sec title="Filter" delay={40}>
+        <div className="btns">{["all",...Object.keys(SIM).filter(k=>counts[k])].map(k=><button key={k} className={"btn sm"+(filter===k?" on":"")} style={{flex:"none"}} onClick={()=>{setFilter(k);setIdx(0)}}>
+          {k==="all"?"All":SIM[k].short}<span style={{opacity:.6,fontWeight:500}}>{k==="all"?items.length:counts[k]}</span></button>)}</div>
+      </Sec>
+      {b&&<Sec title="Pair" aside={`${(idx%n)+1} / ${n}`} delay={80}>
+        <div className="pair" key={filter+idx}>
+          <div><div className="k">Chinese</div><div className="cjk">{b.hanzi}</div><Pinyin text={b.pinyin} size={20}/></div>
+          <div className="arrow">⟷</div>
+          <div><div className="k">Japanese</div><div className="cjk">{b.japanese_kanji}</div><div style={{height:27}}/></div>
+        </div>
+        <div style={{textAlign:"center"}}>
+          <div className="meaning" style={{fontSize:24}}>{b.meaning}</div>
+          <div className={b.similarity==="identical"?"acc":"muted"} style={{fontWeight:600,fontSize:14,marginTop:6}}>{(SIM[b.similarity]||{label:b.similarity}).label}</div>
+          {b.notes&&<div className="dim small" style={{marginTop:6}}>{b.notes}</div>}
+          <button className="ibtn" style={{marginTop:8}} onClick={()=>speak(b.hanzi)} aria-label="Play">{I.speaker(22)}</button>
+        </div>
+      </Sec>}
+      {n>0&&<div className="btns" style={{marginTop:18}}>
+        <button className="btn" onClick={()=>setIdx(i=>(i-1+n)%n)}>{I.back(18)} Prev</button>
+        <button className="btn primary" onClick={()=>setIdx(i=>(i+1)%n)}>Next {I.next(18)}</button>
+      </div>}
+    </>}
+  </div>;
+}
+
+/* ═════════════ APP ═════════════ */
+function App(){
+  const[tab,setTab]=useState("home");
+  const[sources,setSources]=useState(null);
+  const[offline,setOffline]=useState(false);
+  const[srs,setSrs]=useState(()=>LS.get("cs2-srs",{}));
+  const[log,setLog]=useState(()=>LS.get("cs2-log",{}));
+  const[goal,setGoal]=useState(()=>LS.get("cs2-goal",20));
+  const[theme,setTheme]=useState(()=>{const t=LS.get("cs2-theme","ink");return THEMES.some(x=>x.key===t)?t:"ink"});
+  const[autoSpeak,setAutoSpeak]=useState(()=>LS.get("cs2-speak",true));
+  const[mode,setMode]=useState(()=>LS.get("cs2-mode","recognize"));
+  const[lastDeckId,setLastDeckId]=useState(()=>LS.get("cs2-last",null));
+  const[deckOpen,setDeckOpen]=useState(null);
+  const[session,setSession]=useState(null);     // {src,deck,pool,mode,key}
+  const[summary,setSummary]=useState(null);
+  const[toast,setToast]=useState(null);
+  const streakBefore=useRef(0);
+  const[user,setUser]=useState(null);
+  const[personal,setPersonal]=useState([]);
+  useEffect(()=>{
+    if(!sb)return;
+    sb.auth.getSession().then(({data})=>setUser(data.session?.user||null));
+    const{data}=sb.auth.onAuthStateChange((_e,s)=>setUser(s?.user||null));
+    return()=>data.subscription.unsubscribe();
+  },[]);
+  useEffect(()=>{
+    delete deckCache[100];delete deckCache[101];
+    if(!user){setPersonal([]);return}
+    loadPersonal().then(setPersonal).catch(e=>{console.warn(e);setToast("Couldn't load your notes")});
+  },[user?.id]);
+
+  useEffect(()=>{LS.set("cs2-srs",srs)},[srs]);
+  useEffect(()=>{LS.set("cs2-log",log)},[log]);
+  useEffect(()=>{LS.set("cs2-goal",goal)},[goal]);
+  useEffect(()=>{LS.set("cs2-speak",autoSpeak)},[autoSpeak]);
+  useEffect(()=>{LS.set("cs2-mode",mode)},[mode]);
+  useEffect(()=>{document.body.setAttribute("data-theme",theme);LS.set("cs2-theme",theme)},[theme]);
+  useEffect(()=>{loadSources().then(setSources).catch(e=>{console.warn(e);setOffline(true);setSources(SAMPLE_SOURCES)})},[]);
+  useEffect(()=>{if(toast){const t=setTimeout(()=>setToast(null),2200);return()=>clearTimeout(t)}},[toast]);
+  useEffect(()=>{window.scrollTo(0,0)},[tab,deckOpen,session,summary]);
+
+  const start=(src,deck,pool,m)=>{
+    streakBefore.current=streakOf(log);
+    setLastDeckId(src.id);LS.set("cs2-last",src.id);
+    setSummary(null);setSession({src,deck,pool:pool||deck.words,mode:m||mode,key:Date.now()});
+  };
+  const quickStart=async src=>{
+    try{setToast("Loading "+src.label+"…");const d=await loadDeck(src);setToast(null);start(src,d,d.words,mode)}
+    catch(e){setToast("Couldn't load deck: "+(e.message||e))}
+  };
+  const onRate=(w,g,isNew,relearn)=>{
+    setSrs(s=>({...s,[w.id]:{...schedule(s[w.id],g),s:w.source_id}}));
+    if(relearn)return;
+    setLog(l=>{const k=dayKey(),d=l[k]||{reviews:0,correct:0,newWords:0};
+      return{...l,[k]:{...d,reviews:d.reviews+1,correct:d.correct+(g>0?1:0),newWords:d.newWords+(isNew?1:0)}}});
+  };
+
+  const onUndo=(w,prev,counted,g,isNew)=>{
+    setSrs(s=>{const n={...s};if(prev)n[w.id]=prev;else delete n[w.id];return n});
+    if(!counted)return;
+    setLog(l=>{const k=dayKey(),d=l[k];if(!d)return l;
+      return{...l,[k]:{...d,reviews:Math.max(0,d.reviews-1),correct:Math.max(0,d.correct-(g>0?1:0)),newWords:Math.max(0,d.newWords-(isNew?1:0))}}});
+  };
+
+  if(session&&!summary)return <Session key={session.key} {...session} srs={srs} autoSpeak={autoSpeak} onRate={onRate} onUndo={onUndo}
+    onExit={()=>setSession(null)} onFinish={r=>setSummary(r)}/>;
+  if(summary)return <Summary res={summary} src={session.src} log={log} goal={goal} streakBefore={streakBefore.current}
+    onAgain={()=>start(session.src,session.deck,session.pool,session.mode)} onDone={()=>{setSummary(null);setSession(null)}}/>;
+
+  const allSources=sources?[...sources,...personal]:null;
+  let body;
+  if(!sources)body=<div className="empty" style={{marginTop:80}}><span className="cjk">学</span>Loading your decks…</div>;
+  else if(tab==="home")body=<Home sources={allSources} srs={srs} signedOut={!!sb&&!offline&&!user} onSignIn={()=>setTab("progress")} log={log} goal={goal} lastDeckId={lastDeckId} offline={offline}
+    onOpenDeck={s=>{setDeckOpen(s);setTab("decks")}} onAllDecks={()=>{setDeckOpen(null);setTab("decks")}} onQuickStart={quickStart}/>;
+  else if(tab==="decks")body=deckOpen
+    ?<DeckDetail src={deckOpen} srs={srs} mode={mode} setMode={setMode} onBack={()=>setDeckOpen(null)} onStart={start}/>
+    :<DeckList sources={allSources} srs={srs} onOpen={setDeckOpen}/>;
+  else if(tab==="bridge")body=<Bridge/>;
+  else body=<Progress srs={srs} log={log} goal={goal} setGoal={setGoal} theme={theme} setTheme={setTheme} autoSpeak={autoSpeak} setAutoSpeak={setAutoSpeak} user={user}
+    onReset={()=>{if(confirm("Reset all study progress on this device?")){setSrs({});setLog({});setToast("Progress reset")}}}/>;
+
+  const totalDue=Object.values(srs).filter(c=>isDue(c)).length;
+  return <>
+    {body}
+    {!(tab==="decks"&&deckOpen)&&<nav className="tabs">
+      {[{k:"home",g:"家",l:"Home"},{k:"decks",g:"书",l:"Decks"},{k:"bridge",g:"橋",l:"Bridge"},{k:"progress",g:"进",l:"Progress"}].map(t=>
+        <button key={t.k} className={"tab"+(tab===t.k?" on":"")} onClick={()=>{setTab(t.k);if(t.k==="decks")setDeckOpen(null)}}>
+          <span className="cjk">{t.g}</span>{t.l}{t.k==="home"&&totalDue>0&&<span className="n">{totalDue>99?"99+":totalDue}</span>}</button>)}
+    </nav>}
+    <Toast msg={toast}/>
+  </>;
+}
+
+ReactDOM.createRoot(document.getElementById("app")).render(<App/>);
+</script>
+</body>
+</html>
