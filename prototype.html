@@ -23,7 +23,7 @@
   --accent:#e0714f;--on-accent:#fff;
   --t1:#ec7a6a;--t2:#6cc88a;--t3:#74a4f2;--t4:#b98ce6;--t5:#8e8e8e;
   /* one hue per deck — identifies the deck, tints its study sessions */
-  --d0:#e0714f;--d1:#4fb88a;--d2:#c47bd8;--d3:#6f8cf0;--d4:#e0a83a;
+  --d0:#e0714f;--d1:#4fb88a;--d2:#c47bd8;--d3:#6f8cf0;--d4:#e0a83a;--d5:#3fb8c4;--d6:#e66a8f;
   --again:#ec6a5a;--hard:#e0a43a;--good:#4fbf7f;--easy:#6a9cf2;
 }
 [data-theme="paper"]{
@@ -31,7 +31,7 @@
   --text:#25211b;--muted:#5f574b;--dim:#8a8173;
   --accent:#b4442b;--on-accent:#fff;
   --t1:#c8382a;--t2:#2f8a4c;--t3:#2c63c4;--t4:#7d40c0;--t5:#8a8a8a;
-  --d0:#b4442b;--d1:#2f8a5c;--d2:#8a44a8;--d3:#3a5cc4;--d4:#b07a10;
+  --d0:#b4442b;--d1:#2f8a5c;--d2:#8a44a8;--d3:#3a5cc4;--d4:#b07a10;--d5:#1f7f8a;--d6:#b83a62;
   --again:#c8402e;--hard:#b07a10;--good:#2f8a4c;--easy:#2c63c4;
 }
 [data-theme="night"]{
@@ -226,6 +226,12 @@ details.so summary::-webkit-details-marker{display:none}
 
 .undo{position:fixed;left:50%;bottom:122px;transform:translateX(-50%);display:flex;align-items:center;gap:14px;background:var(--text);color:var(--bg);padding:8px 8px 8px 16px;border-radius:12px;font-size:14px;z-index:70;animation:up .2s both;white-space:nowrap}
 .undo button{color:var(--bg);font-weight:700;padding:6px 10px;border-radius:8px;background:color-mix(in srgb,var(--bg) 14%,transparent)}
+.inp{height:48px;border-radius:12px;background:var(--surface);border:1px solid var(--hair);color:var(--text);padding:0 14px;font-size:16px;font-family:inherit;width:100%}
+.inp:focus{outline:2px solid var(--accent);outline-offset:-1px}
+.rec{padding:14px 0;display:grid;gap:4px}
+.rec .w{font-family:'Noto Serif SC',serif;font-size:17px;color:var(--dim);text-decoration:line-through;text-decoration-color:var(--again)}
+.rec .c{font-family:'Noto Serif SC',serif;font-size:19px;color:var(--good)}
+.rec .e{font-size:13px;color:var(--muted)}
 .toast{position:fixed;left:50%;bottom:100px;transform:translateX(-50%);background:var(--text);color:var(--bg);padding:10px 16px;border-radius:12px;font-size:14px;z-index:300;animation:up .25s both;white-space:nowrap}
 .notice{font-size:13px;color:var(--muted);padding:12px 0;border-bottom:1px solid var(--hair);margin-bottom:8px}
 .empty{text-align:center;padding:60px 16px;color:var(--dim)}
@@ -327,12 +333,25 @@ async function loadSources(){
   const{data,error}=await sb.from("chinese_study_app_sources").select("*").eq("is_active",true).order("display_order");
   if(error)throw error;return data;
 }
+// Class Notes + My Mistakes live in owner-only tables (RLS: auth.uid() = user_id)
+async function loadPersonal(){
+  const[n,m]=await Promise.all([
+    sbAll(()=>sb.from("chinese_study_app_personal_notes").select("*").order("display_order")),
+    sbAll(()=>sb.from("chinese_study_app_mistakes").select("*").order("display_order"))]);
+  const out=[];
+  if(n.length)out.push({id:100,label:"Class Notes",category:"My notes",icon:"记",hue:"var(--d5)",word_count:n.length,personal:true,
+    words:n.map(r=>({id:1e6+r.id,source_id:100,hanzi:r.hanzi,pinyin:r.pinyin,meaning:r.meaning,lecture:r.topic,kind:r.kind,needs_check:r.needs_check,source_photo:r.source_photo}))});
+  if(m.length)out.push({id:101,label:"My Mistakes",category:"My notes",icon:"错",hue:"var(--d6)",word_count:m.length,personal:true,kind:"mistakes",
+    words:m.map(r=>({id:2e6+r.id,source_id:101,hanzi:r.correct,pinyin:"",meaning:r.explanation,wrong:r.wrong,correct:r.correct,lecture:r.category,needs_check:r.needs_check,source_photo:r.source_photo}))});
+  return out;
+}
 const deckCache={};
 async function loadDeck(src){
   if(deckCache[src.id])return deckCache[src.id];
   const p=(async()=>{
     if(src.id===0)return{words:SAMPLE_WORDS,chars:{},bridge:{},sandhi:{},rules:{}};
-    const words=await sbAll(()=>sb.from("chinese_study_app_words").select("*").eq("source_id",src.id).order("display_order",{ascending:true}));
+    if(src.kind==="mistakes")return{words:src.words,chars:{},bridge:{},sandhi:{},rules:{}};
+    const words=src.words||await sbAll(()=>sb.from("chinese_study_app_words").select("*").eq("source_id",src.id).order("display_order",{ascending:true}));
     // enrichment is best-effort: a failure here must not block studying
     let chars={},bridge={},sandhi={},rules={};
     try{
@@ -371,7 +390,7 @@ function speak(text){
 }
 
 /* ═════════════ SMALL COMPONENTS ═════════════ */
-const deckHue=src=>`var(--d${((src?.display_order||src?.id||1)-1+500)%5})`;
+const deckHue=src=>src?.hue||`var(--d${((src?.display_order||src?.id||1)-1+500)%5})`;
 const reducedMotion=()=>window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches;
 function confetti(n=70){
   if(reducedMotion())return;
@@ -433,7 +452,7 @@ function deckStats(srs,srcId,total,now=Date.now()){
 
 
 /* ═════════════ HOME ═════════════ */
-function Home({sources,srs,log,goal,lastDeckId,onOpenDeck,onAllDecks,onQuickStart,offline}){
+function Home({sources,srs,log,goal,lastDeckId,onOpenDeck,onAllDecks,onQuickStart,offline,signedOut,onSignIn}){
   const today=log[dayKey()]||{reviews:0};
   const streak=streakOf(log);
   const last=sources.find(s=>s.id===lastDeckId)||sources[0];
@@ -471,6 +490,7 @@ function Home({sources,srs,log,goal,lastDeckId,onOpenDeck,onAllDecks,onQuickStar
     <Sec title="Continue" aside={totalDue?`${totalDue} due in all decks`:null} delay={120}>
       <div className="list">{recent.map(s=><DeckRow key={s.id} s={s} srs={srs} onClick={()=>onOpenDeck(s)}/>)}</div>
       {sources.length>recent.length&&<button className="btn sm text" style={{marginTop:6,paddingLeft:0}} onClick={onAllDecks}>All {sources.length} decks {I.next(16)}</button>}
+      {signedOut&&<button className="btn sm text" style={{marginTop:2,paddingLeft:0}} onClick={onSignIn}>Sign in to add your Class Notes and mistakes {I.next(16)}</button>}
     </Sec>
   </div>;
 }
@@ -511,7 +531,7 @@ function DeckDetail({src,srs,mode,setMode,onBack,onStart}){
   const m=MODES.find(x=>x.key===mode);
 
   return <div className="screen">
-    <Head onBack={onBack} title={src.label} sub={`${src.category} · ${data?data.words.length:src.word_count} words`}
+    <Head onBack={onBack} title={src.label} sub={`${src.category} · ${data?data.words.length:src.word_count} ${src.kind==="mistakes"?"mistakes":"cards"}`}
       right={<div className="cjk" style={{fontSize:34,fontWeight:600,color:deckHue(src)}}>{src.icon}</div>}/>
 
     <Sec delay={40} style={{marginTop:24}}>
@@ -522,9 +542,9 @@ function DeckDetail({src,srs,mode,setMode,onBack,onStart}){
       </div>
     </Sec>
 
-    <Sec title="Practice mode" aside={m.desc} delay={80}>
+    {src.kind!=="mistakes"&&<Sec title="Practice mode" aside={m.desc} delay={80}>
       <div className="btns">{MODES.map(x=><button key={x.key} className={"btn sm"+(mode===x.key?" on":"")} onClick={()=>setMode(x.key)}><span className="cjk">{x.glyph}</span>{x.label}</button>)}</div>
-    </Sec>
+    </Sec>}
 
     {err&&<div className="notice" style={{marginTop:24}}>Couldn't load words: {err}</div>}
     {!data&&!err&&<div className="empty"><span className="cjk">学</span>Loading {src.label}…</div>}
@@ -535,8 +555,14 @@ function DeckDetail({src,srs,mode,setMode,onBack,onStart}){
         <div className="line" style={{marginTop:4}}><i style={{width:(c.seen/c.ws.length*100)+"%"}}/></div></button>)}</div>
     </Sec>}
 
+    {data&&src.kind==="mistakes"&&<Sec title="Record" aside={`${pool.length} ${chapter||"mistakes"}`} delay={160}>
+      <div className="list">{pool.map(x=><div key={x.id} className="rec">
+        <div className="w">{x.wrong}</div><div className="c">{x.correct}</div>
+        <div className="e">{x.meaning}{x.needs_check?" · check photo":""}</div></div>)}</div>
+    </Sec>}
+
     {data&&<div className="dock">
-      <button className="btn primary full" onClick={()=>onStart(src,data,pool,mode)}>{I.play(15)} Start {chapter?`chapter ${chapter}`:"session"} · {m.label}</button>
+      <button className="btn primary full" onClick={()=>onStart(src,data,pool,mode)}>{I.play(15)} Start {chapter?`“${chapter}”`:"session"} · {src.kind==="mistakes"?"Fix the mistakes":m.label}</button>
     </div>}
   </div>;
 }
@@ -588,7 +614,7 @@ function StrokeQuiz({chars,onComplete,revealed}){
 }
 
 /* ═════════════ STUDY SESSION ═════════════ */
-function Session({src,deck,pool,mode,srs,autoSpeak,onRate,onUndo,onExit,onFinish}){
+function Session({src,deck,pool,mode:deckMode,srs,autoSpeak,onRate,onUndo,onExit,onFinish}){
   const init=useMemo(()=>buildQueue(pool,srs),[]);
   const[queue,setQueue]=useState(init.queue);
   const[i,setI]=useState(0);
@@ -605,6 +631,7 @@ function Session({src,deck,pool,mode,srs,autoSpeak,onRate,onUndo,onExit,onFinish
   const[shake,setShake]=useState(false);
   const w=queue[i];
   const card=w?srs[w.id]:null;
+  const mode=w?.wrong?"fix":(deckMode==="write"&&hanChars(w?.hanzi).length>4)?"recall":deckMode;
 
   useEffect(()=>{
     window.scrollTo(0,0);setHint(0);setStrokesOpen(false);
@@ -663,20 +690,21 @@ function Session({src,deck,pool,mode,srs,autoSpeak,onRate,onUndo,onExit,onFinish
   const chars=hanChars(w.hanzi);
   const syls=(w.pinyin||"").trim().split(/\s+/);
   const charPy=(j,h)=>syls.length===chars.length?syls[j]:h.pinyin;
-  const hzSize=chars.length<=1?120:chars.length===2?96:chars.length===3?72:Math.max(40,240/chars.length);
+  const hzSize=chars.length<=1?120:chars.length===2?96:chars.length===3?72:chars.length===4?60:Math.max(26,Math.min(44,330/chars.length));
+  const fixSize=Math.max(22,Math.min(38,320/Math.max(1,[...(w.wrong||"")].length)));
   const isNew=!card&&wasNew.has(w.id);
   const sandhi=(deck.sandhi[w.id]||[]).find(t=>t.modified_pinyin!==t.original_pinyin)||(deck.sandhi[w.id]||[])[0];
   const rule=sandhi?deck.rules[sandhi.rule_id]:null;
   const jp=chars.map(c=>{const h=deck.chars[c];const b=h&&deck.bridge[h.id];return b&&b.japanese_kanji?{c,...b}:null}).filter(Boolean);
-  const hints=[w.hint&&w.hint,mode!=="recognize"&&<Pinyin text={w.pinyin} size={20}/>,mode==="recall"&&chars.length>1&&<>Starts with <span className="cjk" style={{fontSize:20}}>{chars[0]}</span></>].filter(Boolean);
+  const hints=mode==="fix"?[<>Look at: <b>{w.lecture}</b></>]:[w.hint&&w.hint,mode!=="recognize"&&<Pinyin text={w.pinyin} size={20}/>,mode==="recall"&&chars.length>1&&<>Starts with <span className="cjk" style={{fontSize:20}}>{chars[0]}</span></>].filter(Boolean);
   const speakBtn=<button className="ibtn" onClick={()=>speak(w.hanzi)} aria-label="Play pronunciation">{I.speaker(22)}</button>;
-  const tag=<div className={"tag"+(isNew?" new":"")}>{isNew?"New word":MODES.find(m=>m.key===mode).label}</div>;
+  const tag=<div className={"tag"+(isNew?" new":"")}>{mode==="fix"?"Find the mistake":isNew?(w.kind==="sentence"?"New sentence":"New word"):MODES.find(m=>m.key===mode).label}</div>;
   const tones=syls.length===chars.length?syls.map(toneOf):null;
   const Hz=()=>{let ci=0;return <div className="hz" style={{fontSize:hzSize}}>{[...w.hanzi].map((ch,j)=>{
     const t=/\p{Script=Han}/u.test(ch)&&tones?tones[ci++]:null;
     return <span key={j} style={revealed&&t?{color:`var(--t${t})`}:null}>{ch}</span>})}</div>};
   const wt=(tones||syls.map(toneOf));
-  const w1=`var(--t${wt[0]||5})`,w2=`var(--t${wt[wt.length-1]||5})`;
+  const w1=mode==="fix"?"var(--good)":`var(--t${wt[0]||5})`,w2=mode==="fix"?"var(--good)":`var(--t${wt[wt.length-1]||5})`;
 
   return <div className="sess" style={{"--deck":deckHue(src),"--w1":w1,"--w2":w2}}>
     <div className="wash deck" style={{opacity:revealed?0:1}}/>
@@ -693,12 +721,16 @@ function Session({src,deck,pool,mode,srs,autoSpeak,onRate,onUndo,onExit,onFinish
 
       <div className="prompt" style={mode==="write"?{minHeight:"auto",padding:"28px 0 20px"}:revealed?{minHeight:"auto",paddingTop:20}:null}>
         {tag}
-        {mode==="recognize"&&<><Hz/>{revealed&&<Pinyin text={w.pinyin} size={28}/>}{speakBtn}</>}
-        {mode==="recall"&&<><div className="meaning">{w.meaning}</div>{revealed&&<><Hz/><Pinyin text={w.pinyin} size={26}/></>}{revealed&&speakBtn}</>}
+        {mode==="recognize"&&<><Hz/>{revealed&&<Pinyin text={w.pinyin} size={chars.length>4?20:28}/>}{speakBtn}</>}
+        {mode==="recall"&&<><div className="meaning">{w.meaning}</div>{revealed&&<><Hz/><Pinyin text={w.pinyin} size={chars.length>4?20:26}/></>}{revealed&&speakBtn}</>}
         {mode==="listen"&&<>{!revealed&&<button className="btn primary" style={{width:84,height:84,borderRadius:"50%",margin:"12px 0"}} onClick={()=>speak(w.hanzi)} aria-label="Play">{I.speaker(34)}</button>}
           {!revealed&&<div className="dim small">{audioUnlocked?"Tap to replay · what did you hear?":"Tap to play · what did you hear?"}</div>}
           {revealed&&<><Hz/><Pinyin text={w.pinyin} size={26}/>{speakBtn}</>}</>}
         {mode==="write"&&<><div className="meaning">{w.meaning}</div><Pinyin text={w.pinyin} size={22}/></>}
+        {mode==="fix"&&<>
+          <div className="hz" style={{fontSize:fixSize,transition:"color .4s",...(revealed?{color:"var(--dim)",textDecoration:"line-through",textDecorationColor:"var(--again)",textDecorationThickness:2}:null)}}>{w.wrong}</div>
+          {revealed&&<div className="hz" style={{fontSize:fixSize,color:"var(--good)"}}>{w.correct}</div>}
+          {revealed&&speakBtn}</>}
       </div>
 
       {mode==="write"&&chars.length>0&&<StrokeQuiz key={w.id+"-"+revealed} chars={chars} revealed={revealed} onComplete={()=>setRevealed(true)}/>}
@@ -709,7 +741,8 @@ function Session({src,deck,pool,mode,srs,autoSpeak,onRate,onUndo,onExit,onFinish
       </div>}
 
       {revealed&&<div className="answer">
-        {mode!=="recall"&&mode!=="write"&&<div className="meaning">{w.meaning}</div>}
+        {mode==="fix"?<div style={{fontSize:16,lineHeight:1.55,maxWidth:"34ch",margin:"0 auto"}}>{w.meaning}</div>
+          :mode!=="recall"&&mode!=="write"&&<div className="meaning">{w.meaning}</div>}
         {w.marathi&&<div className="mr">{w.marathi}</div>}
         <div className="facts list">
           {chars.some(c=>deck.chars[c])&&<div className="fact"><span>{chars.length>1?"Chars":"Char"}</span><div className="chars">{chars.map((c,j)=>{const h=deck.chars[c];return h?<div key={j}>
@@ -722,8 +755,10 @@ function Session({src,deck,pool,mode,srs,autoSpeak,onRate,onUndo,onExit,onFinish
             <span className="cjk" style={{fontSize:17}}>{b.c} → {b.japanese_kanji}</span> <span className={b.similarity==="identical"?"acc":"muted"} style={{fontSize:13}}>{(SIM[b.similarity]||{label:b.similarity}).label}</span>
             {b.notes&&<div className="sub">{b.notes}</div>}</div>)}</div></div>}
           {w.hint&&<div className="fact"><span>Hint</span><div>{w.hint}</div></div>}
+          {mode==="fix"&&<div className="fact"><span>Type</span><div>{w.lecture}</div></div>}
+          {w.needs_check&&<div className="fact"><span>Note</span><div className="muted">Scan was unclear — check against your photo{w.source_photo?<div className="sub">{w.source_photo}</div>:null}</div></div>}
         </div>
-        {mode!=="write"&&chars.length>0&&window.HanziWriter&&<details className="so" open={strokesOpen} onToggle={e=>setStrokesOpen(e.currentTarget.open)}><summary>{strokesOpen?"Hide":"Show"} stroke order</summary>{strokesOpen&&<div style={{marginTop:12}}><StrokeQuiz chars={chars} revealed/></div>}</details>}
+        {mode!=="write"&&mode!=="fix"&&chars.length>0&&chars.length<=4&&window.HanziWriter&&<details className="so" open={strokesOpen} onToggle={e=>setStrokesOpen(e.currentTarget.open)}><summary>{strokesOpen?"Hide":"Show"} stroke order</summary>{strokesOpen&&<div style={{marginTop:12}}><StrokeQuiz chars={chars} revealed/></div>}</details>}
       </div>}
     </div>
 
@@ -776,8 +811,30 @@ function Summary({res,src,log,goal,streakBefore,onAgain,onDone}){
   </div>;
 }
 
+/* ═════════════ ACCOUNT ═════════════ */
+function Account({user}){
+  const[email,setEmail]=useState(""),[pw,setPw]=useState(""),[msg,setMsg]=useState(null),[busy,setBusy]=useState(false);
+  if(!sb)return <div className="dim small" style={{padding:"14px 0"}}>Sign-in is unavailable offline.</div>;
+  if(user)return <div className="setrow"><div>Signed in<div className="dim small">{user.email}</div></div>
+    <button className="btn sm" onClick={()=>sb.auth.signOut()}>Sign out</button></div>;
+  const google=async()=>{const{error}=await sb.auth.signInWithOAuth({provider:"google",options:{redirectTo:location.origin+location.pathname}});if(error)setMsg(error.message)};
+  const pwLogin=async e=>{e.preventDefault();setBusy(true);setMsg(null);
+    const{error}=await sb.auth.signInWithPassword({email:email.trim(),password:pw});setBusy(false);
+    if(error)setMsg(error.message==="Invalid login credentials"?"Email or password is wrong. If you only use Google, use the Google button.":error.message)};
+  return <div style={{padding:"14px 0",display:"grid",gap:10}}>
+    <div>Sign in to load your Class Notes and mistakes<div className="dim small">They're private: only your account can read them.</div></div>
+    <button className="btn primary full" onClick={google}>Sign in with Google</button>
+    <form onSubmit={pwLogin} style={{display:"grid",gap:8}}>
+      <input id="acct-email" className="inp" type="email" autoComplete="email" placeholder="Email" value={email} onChange={e=>setEmail(e.target.value)} required/>
+      <input id="acct-pw" className="inp" type="password" autoComplete="current-password" placeholder="Password" value={pw} onChange={e=>setPw(e.target.value)} required/>
+      <button className="btn full" disabled={busy}>{busy?"Signing in…":"Sign in with email"}</button>
+    </form>
+    {msg&&<div className="small acc">{msg}</div>}
+  </div>;
+}
+
 /* ═════════════ PROGRESS ═════════════ */
-function Progress({srs,log,goal,setGoal,theme,setTheme,autoSpeak,setAutoSpeak,onReset}){
+function Progress({srs,log,goal,setGoal,theme,setTheme,autoSpeak,setAutoSpeak,onReset,user}){
   const all=Object.values(srs);
   const known=all.filter(isKnown).length,learning=all.length-known;
   const totalReviews=Object.values(log).reduce((a,d)=>a+(d.reviews||0),0);
@@ -803,6 +860,7 @@ function Progress({srs,log,goal,setGoal,theme,setTheme,autoSpeak,setAutoSpeak,on
     <Sec title="Coming up" delay={120}>
       <div className="fc">{fc.map((f,j)=><div key={j} className={j===0?"on":""}>{f.n}<i style={{height:Math.max(3,f.n/fmx*62)}}/>{f.l}</div>)}</div>
     </Sec>
+    <Sec title="Account" delay={150}><div className="list"><Account user={user}/></div></Sec>
     <Sec title="Settings" delay={160}>
       <div className="list">
         <div className="setrow"><div>Daily goal</div><div className="btns">{[10,20,30,50].map(g=><button key={g} className={"btn sm"+(goal===g?" on":"")} style={{flex:"none",minWidth:46}} onClick={()=>setGoal(g)}>{g}</button>)}</div></div>
@@ -875,6 +933,19 @@ function App(){
   const[summary,setSummary]=useState(null);
   const[toast,setToast]=useState(null);
   const streakBefore=useRef(0);
+  const[user,setUser]=useState(null);
+  const[personal,setPersonal]=useState([]);
+  useEffect(()=>{
+    if(!sb)return;
+    sb.auth.getSession().then(({data})=>setUser(data.session?.user||null));
+    const{data}=sb.auth.onAuthStateChange((_e,s)=>setUser(s?.user||null));
+    return()=>data.subscription.unsubscribe();
+  },[]);
+  useEffect(()=>{
+    delete deckCache[100];delete deckCache[101];
+    if(!user){setPersonal([]);return}
+    loadPersonal().then(setPersonal).catch(e=>{console.warn(e);setToast("Couldn't load your notes")});
+  },[user?.id]);
 
   useEffect(()=>{LS.set("cs2-srs",srs)},[srs]);
   useEffect(()=>{LS.set("cs2-log",log)},[log]);
@@ -914,15 +985,16 @@ function App(){
   if(summary)return <Summary res={summary} src={session.src} log={log} goal={goal} streakBefore={streakBefore.current}
     onAgain={()=>start(session.src,session.deck,session.pool,session.mode)} onDone={()=>{setSummary(null);setSession(null)}}/>;
 
+  const allSources=sources?[...sources,...personal]:null;
   let body;
   if(!sources)body=<div className="empty" style={{marginTop:80}}><span className="cjk">学</span>Loading your decks…</div>;
-  else if(tab==="home")body=<Home sources={sources} srs={srs} log={log} goal={goal} lastDeckId={lastDeckId} offline={offline}
+  else if(tab==="home")body=<Home sources={allSources} srs={srs} signedOut={!!sb&&!offline&&!user} onSignIn={()=>setTab("progress")} log={log} goal={goal} lastDeckId={lastDeckId} offline={offline}
     onOpenDeck={s=>{setDeckOpen(s);setTab("decks")}} onAllDecks={()=>{setDeckOpen(null);setTab("decks")}} onQuickStart={quickStart}/>;
   else if(tab==="decks")body=deckOpen
     ?<DeckDetail src={deckOpen} srs={srs} mode={mode} setMode={setMode} onBack={()=>setDeckOpen(null)} onStart={start}/>
-    :<DeckList sources={sources} srs={srs} onOpen={setDeckOpen}/>;
+    :<DeckList sources={allSources} srs={srs} onOpen={setDeckOpen}/>;
   else if(tab==="bridge")body=<Bridge/>;
-  else body=<Progress srs={srs} log={log} goal={goal} setGoal={setGoal} theme={theme} setTheme={setTheme} autoSpeak={autoSpeak} setAutoSpeak={setAutoSpeak}
+  else body=<Progress srs={srs} log={log} goal={goal} setGoal={setGoal} theme={theme} setTheme={setTheme} autoSpeak={autoSpeak} setAutoSpeak={setAutoSpeak} user={user}
     onReset={()=>{if(confirm("Reset all study progress on this device?")){setSrs({});setLog({});setToast("Progress reset")}}}/>;
 
   const totalDue=Object.values(srs).filter(c=>isDue(c)).length;
